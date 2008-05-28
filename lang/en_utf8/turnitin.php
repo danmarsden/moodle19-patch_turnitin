@@ -1,0 +1,24 @@
+<?php
+$string['tii'] = 'Turnitin';
+$string['usetii'] ='Use Turnitin Submission';
+$string['configusetii'] = 'NOTE: you must enable TII in each respective module as well.';
+$string['tiiheading'] = 'Turnitin Submission';
+$string['tiiexplain'] = 'Turnitin is a commercial paper submission system, you must have a paid subscription to this service to use this feature. see http://docs.moodle.org/en/Turnitin_administration for more details';
+$string['configusetiimodule'] = 'Enable Turnitin submission.';
+$string['tiiaccountid'] ='Turnitin Account ID';
+$string['configtiiaccountid'] ='This is your Account ID as provided from Turnitin.com';
+$string['tiisecretkey'] ='Turnitin Secret Key';
+$string['configtiisecretkey'] ='This is normally e-mailed to you on request from your Turnitin.com Account representative';
+$string['configtiiuserid'] ='Username of the person you want all new classes/assignments in Moodle to be assigned to in the turnitin System - this user should not already exist in the Turnitin system, and should not be changed once the turnitin system is being used.';
+$string['configtiiemail'] ='Email address of the person you want all new classes/assignments in Moodle to be assigned to in the turnitin System ';
+$string['configtiifirstname'] ='First name of the person you want all new classes/assignments in Moodle to be assigned to in the turnitin System';
+$string['configtiilastname'] ='Surname of the person you want all new classes/assignments in Moodle to be assigned to in the turnitin System';
+$string['tiisenduseremail'] = 'Send User E-mail';
+$string['config_tiisenduseremail'] = 'Send e-mail to every student created in the TII system with a link to allow login to www.turnitin.com with a temporary password';
+$string['tiicourseprefix'] = 'Course Prefix';
+$string['configtiicourseprefix'] = 'This places a prefix before all courses created in the TII system - you MUST do this if you have more than 1 moodle site using turnitin, and they MUST be different on each moodle site.';
+$string['similarity'] = 'Similarity';
+$string['studentdisclosuredefault']  ='All files uploaded will be submitted to the plagiarism detection service Turnitin.com';
+$string['studentdisclosure'] = 'Student Disclosure';
+$string['configstudentdisclosure'] = 'This text will be displayed to all students on the file upload page.';
+?>

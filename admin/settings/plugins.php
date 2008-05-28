@@ -142,6 +142,50 @@ if ($hassiteconfig) {
             }
         }
     }
+    $bi = array();
+    $bi[] = new admin_setting_heading('turnitin_heading', get_string('tiiheading', 'turnitin'),
+            get_string('tiiexplain', 'turnitin'));
+    
+    $bi[] = new admin_setting_configcheckbox('turnitin_use', get_string('usetii', 'turnitin'), 
+            get_string('configusetii', 'turnitin'), 0);
+    
+    $bi[] = new admin_setting_configtext('turnitin_accountid', get_string('tiiaccountid', 'turnitin'),
+            get_string('configtiiaccountid', 'turnitin'), '');
+
+    $bi[] = new admin_setting_configtext('turnitin_secretkey', get_string('tiisecretkey', 'turnitin'),
+            get_string('configtiisecretkey', 'turnitin'), '');
+
+    $bi[] = new admin_setting_configcheckbox('turnitin_senduseremail', get_string('tiisenduseremail', 'turnitin'), 
+            get_string('config_tiisenduseremail', 'turnitin'), 0);
+
+    $bi[] = new admin_setting_configtext('turnitin_courseprefix', get_string('tiicourseprefix', 'turnitin'),
+            get_string('configtiicourseprefix', 'turnitin'), '');
+
+    //now user settings.
+    $bi[] = new admin_setting_configtext('turnitin_userid', get_string('username'),
+            get_string('configtiiuserid', 'turnitin'), '');
+
+    $bi[] = new admin_setting_configtext('turnitin_email', get_string('email'),
+            get_string('configtiiemail', 'turnitin'), '');
+
+    $bi[] = new admin_setting_configtext('turnitin_firstname', get_string('firstname'),
+            get_string('configtiifirstname', 'turnitin'), '');
+
+    $bi[] = new admin_setting_configtext('turnitin_lastname', get_string('lastname'),
+            get_string('configtiilastname', 'turnitin'), '');
+            
+    $bi[] = new admin_setting_configtextarea('turnitin_student_disclosure', get_string('studentdisclosure','turnitin'),
+            get_string('configstudentdisclosure','turnitin'), get_string('studentdisclosuredefault','turnitin'));
+                
+    $temp = new admin_settingpage('tii', get_string('tii','turnitin'));
+
+    foreach ($bi as $backupitem) {
+        $backupitem->plugin = 'tii';
+        $temp->add($backupitem);
+    }
+
+    $ADMIN->add('modsettings', $temp);
+    
 }
 
 

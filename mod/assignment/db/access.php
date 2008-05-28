@@ -65,7 +65,34 @@ $mod_assignment_capabilities = array(
             'editingteacher' => CAP_ALLOW,
             'admin' => CAP_ALLOW
         )
-    )
+    ),
+
+    'moodle/turnitin:enableturnitin' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSE,
+         'legacy' => array(
+         'teacher' => CAP_ALLOW,
+         'admin' => CAP_ALLOW
+        )
+    ),
+
+    'moodle/turnitin:viewsimilarityscore' => array(
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_COURSE,
+         'legacy' => array(
+         'teacher' => CAP_ALLOW,
+         'admin' => CAP_ALLOW
+        )
+    ),
+
+    'moodle/turnitin:viewfullreport' => array(
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_COURSE,
+         'legacy' => array(
+         'teacher' => CAP_ALLOW,
+         'admin' => CAP_ALLOW
+        )
+    ) 
 );
 
 ?>

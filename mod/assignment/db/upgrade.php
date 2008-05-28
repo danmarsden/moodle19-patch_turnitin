@@ -59,6 +59,17 @@ function xmldb_assignment_upgrade($oldversion=0) {
         $db->debug = true;
     }
 
+    if ($result && $oldversion < 2008230500) {
+        //new TII field in assignment table
+        $table = new XMLDBTable('assignment');
+
+        $field = new XMLDBField('use_tii_submission');
+        $field->setAttributes(XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null, null, '0', 'maxbytes');
+        
+        if ($result) {
+            $result = $result && add_field($table, $field);
+        }
+    }
     return $result;
 }
 
