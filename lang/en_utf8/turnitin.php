@@ -21,4 +21,6 @@ $string['similarity'] = 'Similarity';
 $string['studentdisclosuredefault']  ='All files uploaded will be submitted to the plagiarism detection service Turnitin.com';
 $string['studentdisclosure'] = 'Student Disclosure';
 $string['configstudentdisclosure'] = 'This text will be displayed to all students on the file upload page.';
+$string['tiiemailprefix'] ='Student Email prefix';
+$string['configtiiemailprefix'] ='You must set this if you do not want students to view full reports, by logging into the turnitin.com website with their e-mail address. - this value is not used if send user e-mail is set.';
 ?>

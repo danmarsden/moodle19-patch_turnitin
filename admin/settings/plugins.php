@@ -157,6 +157,9 @@ if ($hassiteconfig) {
 
     $bi[] = new admin_setting_configcheckbox('turnitin_senduseremail', get_string('tiisenduseremail', 'turnitin'), 
             get_string('config_tiisenduseremail', 'turnitin'), 0);
+    
+    $bi[] = new admin_setting_configtext('turnitin_emailprefix', get_string('tiiemailprefix', 'turnitin'),
+            get_string('configtiiemailprefix', 'turnitin'), '');
 
     $bi[] = new admin_setting_configtext('turnitin_courseprefix', get_string('tiicourseprefix', 'turnitin'),
             get_string('configtiicourseprefix', 'turnitin'), '');

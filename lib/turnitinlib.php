@@ -20,6 +20,13 @@ function tii_get_url($tii, $returnArray=false) {
     }
     //TODO need to check lengths of certain vars. - some cannot be under 5 or over 50.
 
+    if (isset($tii['dis']) && $tii['dis'] == '0') { //if set not to send user emails
+        if (isset($tiisettings['turnitin_emailprefix'])) { //if email prefix is set
+            if ($tii['uem'] <> $tiisettings['turnitin_email']) { //if email is not the global teacher.
+                $tii['uem'] = $tiisettings['turnitin_emailprefix'] . $tii['uem']; //munge e-mail to prevent user access.
+            }
+        }
+    }
     //set vars if not set.
     if (!isset($tii['encrypt'])) {
         $tii['encrypt'] = '0';
