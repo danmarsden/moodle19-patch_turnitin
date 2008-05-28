@@ -1110,7 +1110,7 @@ class assignment_upload extends assignment_base {
         $course_context = get_context_instance(CONTEXT_COURSE, $COURSE->id);
         if (has_capability('moodle/turnitin:enableturnitin', $course_context)) {
             $tii = get_field('config_plugins', 'value', 'name', 'turnitin_use');
-            if (isset($tii) && $tii && isset($CFG->assignment_usetii) && $CFG->assignment_usetii) { //if tii enabled, allow teachers to elect to use it.
+            if (isset($tii) && $tii && isset($CFG->assignment_use_tii_submission) && $CFG->assignment_use_tii_submission) { //if tii enabled, allow teachers to elect to use it.
                 $mform->addElement('select', 'use_tii_submission', get_string("usetii", "turnitin"), $ynoptions);
                 //$mform->setHelpButton('use_tii_submission', array('use_tii_submission', get_string('use_tii_submission', 'local'), 'assignment'));
                 $mform->setDefault('use_tii_submission', 0);
