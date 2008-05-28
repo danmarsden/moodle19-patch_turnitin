@@ -15,7 +15,7 @@ $settings->add(new admin_setting_configcheckbox('assignment_showrecentsubmission
                    
 $tii = get_field('config_plugins', 'value', 'name', 'turnitin_use');
 if (isset($tii) && $tii) {
-    $settings->add(new admin_setting_configcheckbox('assignment_usetii_submission', get_string('usetii', 'turnitin'), 
+    $settings->add(new admin_setting_configcheckbox('assignment_use_tii_submission', get_string('usetii', 'turnitin'), 
                    get_string('configusetiimodule', 'turnitin'), 0));
 }
 ?>

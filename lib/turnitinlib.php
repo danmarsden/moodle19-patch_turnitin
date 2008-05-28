@@ -339,7 +339,7 @@ function tii_get_scores() {
         //first do submission
         //get all files set to "51" - success code for uploading.
         $files = get_records('tii_files','tiicode','51');
-        print_object($files);
+        //print_object($files);
         if (!empty($files)) {
             foreach($files as $file) {
                //set globals.          

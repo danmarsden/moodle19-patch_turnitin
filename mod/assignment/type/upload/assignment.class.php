@@ -630,7 +630,7 @@ class assignment_upload extends assignment_base {
                     $this->email_teachers($submission);
                 }
                 
-                if (isset($this->assignment->usetii_submission) && $this->assignment->usetii_submission) {
+                if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission) {
                     //now update or insert record into tii_files
                     if ($tii_file = get_record_select('tii_files', "course='".$this->course->id.
                                     "' AND module='".$this->cm->module.
@@ -1105,10 +1105,7 @@ class assignment_upload extends assignment_base {
 
         $mform->addElement('select', 'var4', get_string("trackdrafts", "assignment"), $ynoptions);
         $mform->setHelpButton('var4', array('trackdrafts', get_string('trackdrafts', 'assignment'), 'assignment'));
-<<<<<<< HEAD:mod/assignment/type/upload/assignment.class.php
         $mform->setDefault('var4', 1);
-=======
-        $mform->setDefault('trackdrafts', 1);
         
         $course_context = get_context_instance(CONTEXT_COURSE, $COURSE->id);
         if (has_capability('moodle/turnitin:enableturnitin', $course_context)) {
@@ -1119,7 +1116,6 @@ class assignment_upload extends assignment_base {
                 $mform->setDefault('use_tii_submission', 0);
             }
         }
->>>>>>> 7c8d7b9... Turnitin Integration Phase 1 - assignment -advanced file upload:mod/assignment/type/upload/assignment.class.php
 
     }
 
