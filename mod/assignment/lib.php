@@ -536,10 +536,10 @@ class assignment_base {
 
                         $tii['fid'] = '1'; //set command. - create user and login to Turnitin (fid=1)
                         //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
-                        if (tii_post_to_api($tii, 11)) {
+                        if (tii_post_to_api($tii, 11, 'GET','',false)) {
                             $tii['fid'] = '2'; //now create class under the given account and assign above user as instructor (fid=2)
                             //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
-                            if (tii_post_to_api($tii, 21)) {                            
+                            if (tii_post_to_api($tii, 21, 'GET','',false)) {                            
                                 //now create Assignment in Class
                                 $tii['assignid'] = $tiisettings['turnitin_courseprefix']. '_'.$assignment->name.'_'.$assignment->id; //assignment ID - uses $returnid to ensure uniqueness
                                 $tii['assign']   = $tiisettings['turnitin_courseprefix']. '_'.$assignment->name.'_'.$assignment->id; //assignment name stored in TII
@@ -552,7 +552,7 @@ class assignment_base {
                                 $tii['dtdue']    = '20081010'; //need to fix this so it is more correct.
                                 $tii['s_view_report'] = '1';
                                 //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
-                                if (tii_post_to_api($tii, 41, 'POST')) {
+                                if (tii_post_to_api($tii, 41, 'POST','',false)) {
                                     debugging("Success creating user, Class and assignment!", DEBUG_DEVELOPER);
                                 }
                             }
