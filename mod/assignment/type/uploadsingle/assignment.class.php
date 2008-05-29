@@ -8,10 +8,10 @@ class assignment_uploadsingle extends assignment_base {
 
 
     function print_student_answer($userid, $return=false){
-           global $CFG, $USER;
+           global $CFG, $COURSE, $USER;
 
         $filearea = $this->file_area_name($userid);
-
+        $submission = $this->get_submission($userid);
         $output = '';
 
         if ($basedir = $this->file_area($userid)) {
@@ -25,7 +25,34 @@ class assignment_uploadsingle extends assignment_base {
                     //died right here
                     //require_once($ffurl);
                     $output = '<img src="'.$CFG->pixpath.'/f/'.$icon.'" class="icon" alt="'.$icon.'" />'.
-                            '<a href="'.$ffurl.'" >'.$file.'</a><br />';
+                            '<a href="'.$ffurl.'" >'.$file.'</a>';
+                   //now get TII stuff if enabled
+                       $moduleid = get_field('modules', 'id','name','assignment');
+                       $assignment = get_record('assignment', 'id', $submission->assignment);
+                       
+                       if (isset($assignment->use_tii_submission) && $assignment->use_tii_submission) {
+                        
+                           if (has_capability('moodle/turnitin:viewsimilarityscore', $this->context)) {
+                               include_once($CFG->libdir.'/turnitinlib.php');
+                               if ($tiisettings = tii_get_settings()) {
+                                   $tiifile = get_record_select('tii_files', "course='".$COURSE->id.
+                                                            "' AND module='".get_field('modules', 'id','name','assignment').
+                                                            "' AND instance='".$submission->assignment.
+                                                            "' AND userid='".$userid.
+                                                            "' AND filename='".$file.
+                                                            "' AND tiicode='success'");
+                                   if (!empty($tiifile->tiiscore)) {
+                                        if (has_capability('moodle/turnitin:viewfullreport', $this->context)) { 
+                                            $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a>'.$tiifile->tiiscore.'%';
+                                        } else {
+                                            $output .= '&nbsp;'.get_string('similarity', 'turnitin').':'.$tiifile->tiiscore.'%';
+                                        }
+                                   }
+                               }
+                           }
+                       }                 
+                       $output .='<br/>';
+
                 }
             }
         }
@@ -132,6 +159,33 @@ class assignment_uploadsingle extends assignment_base {
                         $this->update_grade($submission);
                         $this->email_teachers($submission);
                         print_heading(get_string('uploadedfile'));
+                if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission) {
+                    //now update or insert record into tii_files
+                    if ($tii_file = get_record_select('tii_files', "course='".$this->course->id.
+                                    "' AND module='".$this->cm->module.
+                                    "' AND instance='".$this->assignment->id.
+                                    "' AND userid = '".$USER->id.
+                                    "' AND filename = '".$um->get_new_filename()."'")) {
+                        //update record.
+                        $tii_file->tiicode = 'pending';
+                        $tii_file->tiiscore ='0';
+                        if (!update_record('tii_files', $tii_file)) {
+                            debugging("update tii_files failed!");
+                        }
+                    } else {
+                        $tii_file = new object();
+                        $tii_file->course = $this->course->id;
+                        $tii_file->module = $this->cm->module;
+                        $tii_file->instance = $this->assignment->id;
+                        $tii_file->userid = $USER->id;
+                        $tii_file->filename = $um->get_new_filename();
+                        $tii_file->tiicode = 'pending';
+                        if (!insert_record('tii_files', $tii_file)) {
+                            debugging("insert into tii_files failed");
+                        }
+                    }
+                }
+
                     } else {
                         notify(get_string("uploadfailnoupdate", "assignment"));
                     }
@@ -178,6 +232,15 @@ class assignment_uploadsingle extends assignment_base {
         $mform->addElement('select', 'maxbytes', get_string('maximumsize', 'assignment'), $choices);
         $mform->setDefault('maxbytes', $CFG->assignment_maxbytes);
 
+        $course_context = get_context_instance(CONTEXT_COURSE, $COURSE->id);
+        if (has_capability('moodle/turnitin:enableturnitin', $course_context)) {
+            $tii = get_field('config_plugins', 'value', 'name', 'turnitin_use');
+            if (isset($tii) && $tii && isset($CFG->assignment_use_tii_submission) && $CFG->assignment_use_tii_submission) { //if tii enabled, allow teachers to elect to use it.
+                $mform->addElement('select', 'use_tii_submission', get_string("usetii", "turnitin"), $ynoptions);
+                //$mform->setHelpButton('use_tii_submission', array('use_tii_submission', get_string('use_tii_submission', 'local'), 'assignment'));
+                $mform->setDefault('use_tii_submission', 0);
+            }
+        }
     }
 
 }
