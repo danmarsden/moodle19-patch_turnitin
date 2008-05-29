@@ -59,7 +59,7 @@ function xmldb_assignment_upgrade($oldversion=0) {
         $db->debug = true;
     }
 
-    if ($result && $oldversion < 2008230500) {
+    if ($result && $oldversion < 2008052300) {
         //new TII field in assignment table
         $table = new XMLDBTable('assignment');
 
@@ -69,6 +69,25 @@ function xmldb_assignment_upgrade($oldversion=0) {
         if ($result) {
             $result = $result && add_field($table, $field);
         }
+    }
+    if ($result && $oldversion < 2008052900) {
+        //new TII field in assignment table
+        $table = new XMLDBTable('assignment');
+
+        $field = new XMLDBField('tii_show_student_score');
+        $field->setAttributes(XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null, null, '0', 'use_tii_submission');
+        
+        if ($result) {
+            $result = $result && add_field($table, $field);
+        }
+        
+        $field = new XMLDBField('tii_show_student_report');
+        $field->setAttributes(XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null, null, '0', 'tii_show_student_score');
+        
+        if ($result) {
+            $result = $result && add_field($table, $field);
+        }
+        
     }
     return $result;
 }
