@@ -1806,7 +1806,36 @@ class assignment_base {
                     $ffurl = get_file_url("$filearea/$file", array('forcedownload'=>1));
 
                     $output .= '<img src="'.$CFG->pixpath.'/f/'.$icon.'" class="icon" alt="'.$icon.'" />'.
-                            '<a href="'.$ffurl.'" >'.$file.'</a><br />';
+                            '<a href="'.$ffurl.'" >'.$file.'</a>';
+                            
+                    if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission) { //if this assignment uses tii
+                    $assignopen = $this->isopen();
+                           if (isset($this->assignment->tii_show_student_report) && isset($this->assignment->tii_show_student_score) and //if report and score fields are set.
+                               ($this->assignment->tii_show_student_report== 1 or $this->assignment->tii_show_student_score ==1 or //if show always is set
+                               ($this->assignment->tii_show_student_score==2 && $this->assignopen) or //if student score to be show when assignment closed
+                               ($this->assignment->tii_show_student_report==2 && $this->assignopen))) { //if student report to be shown when assignment closed
+                               include_once($CFG->libdir.'/turnitinlib.php');
+                               if ($tiisettings = tii_get_settings()) {
+                                   $tiifile = get_record_select('tii_files', "course='".$this->assignment->course.
+                                                            "' AND module='".get_field('modules', 'id','name','assignment').
+                                                            "' AND instance='".$this->assignment->id.
+                                                            "' AND userid='".$userid.
+                                                            "' AND filename='".$file.
+                                                            "' AND tiicode='success'");
+                                   if (!empty($tiifile->tiiscore)) {
+                                        if ($this->assignment->tii_show_student_report==2 or $this->assignment->tii_show_student_report==1) { 
+                                            $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').'</a>';
+                                            if ($this->assignment->tii_show_student_score==1 or ($this->assignment->tii_show_student_score==2 && $this->assignopen)) {
+                                                $output .= ':'.$tiifile->tiiscore.'%';
+                                            }
+                                        } else {
+                                            $output .= '&nbsp;'.get_string('similarity', 'turnitin').':'.$tiifile->tiiscore.'%';
+                                        }
+                                   }
+                               }
+                           }
+                    }
+                    $output .='<br />';
                 }
             }
         }

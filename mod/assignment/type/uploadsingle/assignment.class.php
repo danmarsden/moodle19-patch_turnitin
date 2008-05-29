@@ -239,6 +239,19 @@ class assignment_uploadsingle extends assignment_base {
                 $mform->addElement('select', 'use_tii_submission', get_string("usetii", "turnitin"), $ynoptions);
                 //$mform->setHelpButton('use_tii_submission', array('use_tii_submission', get_string('use_tii_submission', 'local'), 'assignment'));
                 $mform->setDefault('use_tii_submission', 0);
+                
+                                $tiioptions = array();
+                $tiioptions[0] = get_string("never");
+                $tiioptions[1] = get_string("always");
+                $tiioptions[2] = get_string("showwhenclosed", "turnitin");
+                
+                $mform->addElement('select', 'tii_show_student_score', get_string("showstudentsscore", "turnitin"), $tiioptions);
+                //$mform->setHelpButton('use_tii_submission', array('use_tii_submission', get_string('use_tii_submission', 'local'), 'assignment'));
+                $mform->setDefault('tii_show_student_score', 0);
+
+                $mform->addElement('select', 'tii_show_student_report', get_string("showstudentsreport", "turnitin"), $tiioptions);
+                //$mform->setHelpButton('use_tii_submission', array('use_tii_submission', get_string('use_tii_submission', 'local'), 'assignment'));
+                $mform->setDefault('tii_show_student_report', 0);
             }
         }
     }

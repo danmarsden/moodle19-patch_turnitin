@@ -425,11 +425,7 @@ class assignment_upload extends assignment_base {
                                    }
                                }
                            }
-                       }                 
-                    
-                    
-                    
-                    
+                    }
                     $output .= '<br />';
                 }
             }
