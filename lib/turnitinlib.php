@@ -15,6 +15,7 @@ function tii_get_url($tii, $returnArray=false) {
             $value = rawurldecode($value); //decode url first. (in case has already be encoded - don't want to end up with double % replacements)
             $value = rawurlencode($value);
             $value = str_replace('%20', '_', $value);
+            $value = str_replace('%','', $value); //strip out any extra % - this isn't great, TII api doesn't like % values.
             $tii[$key] = $value;
         }
     }
