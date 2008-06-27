@@ -15,7 +15,6 @@ function tii_get_url($tii, $returnArray=false) {
             $value = rawurldecode($value); //decode url first. (in case has already be encoded - don't want to end up with double % replacements)
             $value = rawurlencode($value);
             $value = str_replace('%20', '_', $value);
-            $value = str_replace('%','', $value); //strip out any extra % - this isn't great, TII api doesn't like % values.
             $tii[$key] = $value;
         }
     }
@@ -94,7 +93,16 @@ function tii_get_url($tii, $returnArray=false) {
     }
     $tii['version'] = 'Moodle_19'; //maybe change this to get $CFG->version - only really used by TII for stats reasons. - we don't need this.
     
-    $tii['md5'] = tii_get_md5string($tii);
+    //prepare $tii for md5string - need to urldecode before generating the md5.
+    $tiimd5 = array();
+    foreach($tii as $key => $value) {
+        if (!empty($value) AND $key <> 'tem' AND $key <> 'uem') {
+            $value = rawurldecode($value); //decode url for calculating MD5
+            $tiimd5[$key] = $value;
+        }
+    }
+    
+    $tii['md5'] = tii_get_md5string($tiimd5);
 
     if ($returnArray) {
         return $tii;
