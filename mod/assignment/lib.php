@@ -435,7 +435,6 @@ class assignment_base {
      */
     function delete_instance($assignment) {
         global $CFG;
-
         $assignment->courseid = $assignment->course;
 
         $result = true;
@@ -452,6 +451,10 @@ class assignment_base {
             $result = false;
         }
 
+        $mod = get_field('modules','id','name','assignment');
+        if (!delete_records('tii_files', 'course', $assignment->courseid, 'module', $mod, 'instance', $assignment->id)) { 
+            $result = false;
+        }
         // delete file area with all attachments - ignore errors
         require_once($CFG->libdir.'/filelib.php');
         fulldelete($CFG->dataroot.'/'.$assignment->course.'/'.$CFG->moddata.'/assignment/'.$assignment->id);
