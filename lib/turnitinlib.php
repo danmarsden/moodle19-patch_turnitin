@@ -6,7 +6,6 @@
 
 function tii_get_url($tii, $returnArray=false) {
     global $CFG;
-    
     $tiisettings = get_records_menu('config_plugins', 'plugin', 'tii', '', 'name,value');
 
     //make sure all $tii values are clean.
@@ -99,9 +98,11 @@ function tii_get_url($tii, $returnArray=false) {
         if (!empty($value) AND $key <> 'tem' AND $key <> 'uem') {
             $value = rawurldecode($value); //decode url for calculating MD5
             $tiimd5[$key] = $value;
+        } else {
+            $tiimd5[$key] = $value;
         }
     }
-    
+
     $tii['md5'] = tii_get_md5string($tiimd5);
 
     if ($returnArray) {
