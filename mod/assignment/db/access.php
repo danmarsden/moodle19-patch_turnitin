@@ -71,7 +71,7 @@ $mod_assignment_capabilities = array(
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
          'legacy' => array(
-         'teacher' => CAP_ALLOW,
+         'editingteacher' => CAP_ALLOW,
          'admin' => CAP_ALLOW
         )
     ),
@@ -80,7 +80,7 @@ $mod_assignment_capabilities = array(
         'captype' => 'read',
         'contextlevel' => CONTEXT_COURSE,
          'legacy' => array(
-         'teacher' => CAP_ALLOW,
+         'editingteacher' => CAP_ALLOW,
          'admin' => CAP_ALLOW
         )
     ),
@@ -89,7 +89,7 @@ $mod_assignment_capabilities = array(
         'captype' => 'read',
         'contextlevel' => CONTEXT_COURSE,
          'legacy' => array(
-         'teacher' => CAP_ALLOW,
+         'editingteacher' => CAP_ALLOW,
          'admin' => CAP_ALLOW
         )
     ) 
