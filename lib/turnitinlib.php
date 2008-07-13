@@ -277,6 +277,7 @@ function tii_get_settings() {
 
 function tii_send_files() {
     global $CFG;
+    $count = 0;
         if ($tiisettings = tii_get_settings()) {
         mtrace("sending Turnitin files");
         //first do submission
@@ -339,19 +340,22 @@ function tii_send_files() {
                         $tii['ptype']   = '2'; //filetype
                         $tii['pfn']     = $tii['ufn'];
                         $tii['pln']     = $tii['uln'];
-                        //$tii['diagnostic'] = '1';;
+                        //$tii['diagnostic'] = '1';
+                        $count++;
                         if (tii_post_to_api($tii, 51, 'POST', $file)) {
                             debugging("success uploading assignment", DEBUG_DEVELOPER);
                         }
                     }
                 }
             } //done all that is needed for tii submission..
-       }  
+       }
+       mtrace("sent ".$count." files"); 
    }
 }
 
 function tii_get_scores() {
     if ($tiisettings = tii_get_settings()) {
+        $count = 0;
         mtrace("getting Turnitin scores");
         //first do submission
         //get all files set to "51" - success code for uploading.
@@ -379,12 +383,14 @@ function tii_get_scores() {
                if (!empty($tiiscore)) {
                    $file->tiiscore = $tiiscore;
                    $file->tiicode = 'success';
+                   $count++;
                    if (!update_record('tii_files', $file)) {
                        debugging("update tii score failed");
                    }
                }      
             }
         }
+        mtrace("received ".$count." new scores"); 
     }
 }
 
