@@ -81,6 +81,10 @@
                 $status = backup_assignment_files_instance($bf,$preferences,$assignment->id);
             }
         }
+        //now backup Turnitin files
+        if (isset($assignment->use_tii_submission) && $assignment->use_tii_submission) {
+            $status = backup_turnitin_files($bf,$preferences,$assignment);
+        }
         //End mod
         $status =fwrite ($bf,end_tag("MOD",3,true));
 
@@ -268,5 +272,34 @@
         return get_records_sql ("SELECT s.id , s.assignment
                                  FROM {$CFG->prefix}assignment_submissions s
                                  WHERE s.assignment = $instanceid");
+    }
+    function backup_turnitin_files($bf,$preferences,$assignment) {
+        $mod = get_field('modules','id','name','assignment');
+        $tii_files = get_records_select('tii_files', "course=$assignment->course AND module=$mod AND instance=$assignment->id");
+        //If there is options
+        if ($tii_files) {            
+            //Write start tag
+            $status =fwrite ($bf,start_tag("TIIFILES",4,true));
+            //Iterate over each answer
+            foreach ($tii_files as $cho_opt) {
+                //Start option
+                $status =fwrite ($bf,start_tag("TIIFILE",5,true));
+                //Print option contents
+                fwrite ($bf,full_tag("ID",6,false,$cho_opt->id));
+                fwrite ($bf,full_tag("COURSE",6,false,$cho_opt->course));
+                fwrite ($bf,full_tag("MODULE",6,false,$cho_opt->module));
+                fwrite ($bf,full_tag("INSTANCE",6,false,$cho_opt->instance));
+                fwrite ($bf,full_tag("USERID",6,false,$cho_opt->userid));
+                fwrite ($bf,full_tag("FILENAME",6,false,$cho_opt->filename));
+                fwrite ($bf,full_tag("TII",6,false,$cho_opt->tii));
+                fwrite ($bf,full_tag("TIICODE",6,false,$cho_opt->tiicode));
+                fwrite ($bf,full_tag("TIISCORE",6,false,$cho_opt->tiiscore));
+                
+                //End answer
+                $status =fwrite ($bf,end_tag("TIIFILE",5,true));
+            }
+            //Write end tag
+            $status =fwrite ($bf,end_tag("TIIFILES",4,true));
+        }
     }
 ?>
