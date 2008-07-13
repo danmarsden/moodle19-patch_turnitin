@@ -159,32 +159,8 @@ class assignment_uploadsingle extends assignment_base {
                         $this->update_grade($submission);
                         $this->email_teachers($submission);
                         print_heading(get_string('uploadedfile'));
-                if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission) {
-                    //now update or insert record into tii_files
-                    if ($tii_file = get_record_select('tii_files', "course='".$this->course->id.
-                                    "' AND module='".$this->cm->module.
-                                    "' AND instance='".$this->assignment->id.
-                                    "' AND userid = '".$USER->id.
-                                    "' AND filename = '".$um->get_new_filename()."'")) {
-                        //update record.
-                        $tii_file->tiicode = 'pending';
-                        $tii_file->tiiscore ='0';
-                        if (!update_record('tii_files', $tii_file)) {
-                            debugging("update tii_files failed!");
-                        }
-                    } else {
-                        $tii_file = new object();
-                        $tii_file->course = $this->course->id;
-                        $tii_file->module = $this->cm->module;
-                        $tii_file->instance = $this->assignment->id;
-                        $tii_file->userid = $USER->id;
-                        $tii_file->filename = $um->get_new_filename();
-                        $tii_file->tiicode = 'pending';
-                        if (!insert_record('tii_files', $tii_file)) {
-                            debugging("insert into tii_files failed");
-                        }
-                    }
-                }
+                        
+                        $this->save_tii_file($um->get_new_filename());
 
                     } else {
                         notify(get_string("uploadfailnoupdate", "assignment"));
@@ -200,6 +176,7 @@ class assignment_uploadsingle extends assignment_base {
                         $this->update_grade($submission);
                         $this->email_teachers($newsubmission);
                         print_heading(get_string('uploadedfile'));
+                        $this->save_tii_file($um->get_new_filename());
                     } else {
                         notify(get_string("uploadnotregistered", "assignment", $newfile_name) );
                     }
@@ -255,7 +232,36 @@ class assignment_uploadsingle extends assignment_base {
             }
         }
     }
-
+    
+    function save_tii_file($filename) {
+        global $USER;
+        if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission) {
+            //now update or insert record into tii_files
+            if ($tii_file = get_record_select('tii_files', "course='".$this->course->id.
+                            "' AND module='".$this->cm->module.
+                            "' AND instance='".$this->assignment->id.
+                            "' AND userid = '".$USER->id.
+                            "' AND filename = '".$filename."'")) {
+               //update record.
+               $tii_file->tiicode = 'pending';
+               $tii_file->tiiscore ='0';
+               if (!update_record('tii_files', $tii_file)) {
+                    debugging("update tii_files failed!");
+               }
+            } else {
+                $tii_file = new object();
+                $tii_file->course = $this->course->id;
+                $tii_file->module = $this->cm->module;
+                $tii_file->instance = $this->assignment->id;
+                $tii_file->userid = $USER->id;
+                $tii_file->filename = $filename;
+                $tii_file->tiicode = 'pending';
+                if (!insert_record('tii_files', $tii_file)) {
+                    debugging("insert into tii_files failed");
+                }
+           }
+       }
+    }
 }
 
 ?>
