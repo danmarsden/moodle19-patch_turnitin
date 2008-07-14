@@ -69,6 +69,9 @@
         fwrite ($bf,full_tag("VAR5",4,false,$assignment->var5));
         fwrite ($bf,full_tag("ASSIGNMENTTYPE",4,false,$assignment->assignmenttype));
         fwrite ($bf,full_tag("MAXBYTES",4,false,$assignment->maxbytes));
+        fwrite ($bf,full_tag("USE_TII_SUBMISSION",4,false,$assignment->use_tii_submission));
+        fwrite ($bf,full_tag("TII_SHOW_STUDENT_SCORE",4,false,$assignment->tii_show_student_score));
+        fwrite ($bf,full_tag("TII_SHOW_STUDENT_REPORT",4,false,$assignment->tii_show_student_report));
         fwrite ($bf,full_tag("TIMEDUE",4,false,$assignment->timedue));
         fwrite ($bf,full_tag("TIMEAVAILABLE",4,false,$assignment->timeavailable));
         fwrite ($bf,full_tag("GRADE",4,false,$assignment->grade));
