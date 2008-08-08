@@ -352,7 +352,7 @@ class assignment_base {
      * @return int The id of the assignment
      */
     function add_instance($assignment) {
-        global $COURSE, $CFG;
+        global $COURSE;
 
         $assignment->timemodified = time();
         $assignment->courseid = $assignment->course;
@@ -375,6 +375,7 @@ class assignment_base {
 
                 add_event($event);
             }
+
             $assignment = stripslashes_recursive($assignment);
             assignment_grade_item_update($assignment);
 
@@ -393,6 +394,7 @@ class assignment_base {
      */
     function delete_instance($assignment) {
         global $CFG;
+
         $assignment->courseid = $assignment->course;
 
         $result = true;
@@ -435,7 +437,7 @@ class assignment_base {
      * @return int The assignment id
      */
     function update_instance($assignment) {
-        global $COURSE, $CFG;
+        global $COURSE;
 
         $assignment->timemodified = time();
 

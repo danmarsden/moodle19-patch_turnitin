@@ -59,7 +59,7 @@ function xmldb_assignment_upgrade($oldversion=0) {
         $db->debug = true;
     }
 
-    if ($result && $oldversion < 2008052300) {
+    if ($result && $oldversion < 2007101512) {
         //new TII field in assignment table
         $table = new XMLDBTable('assignment');
 
