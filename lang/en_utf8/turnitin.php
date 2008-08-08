@@ -3,7 +3,7 @@ $string['tii'] = 'Turnitin';
 $string['usetii'] ='Use Turnitin Submission';
 $string['configusetii'] = 'NOTE: you must enable TII in each respective module as well.';
 $string['tiiheading'] = 'Turnitin Submission';
-$string['tiiexplain'] = 'Turnitin is a commercial paper submission system, you must have a paid subscription to this service to use this feature. see http://docs.moodle.org/en/Turnitin_administration for more details';
+$string['tiiexplain'] = 'Turnitin is a commercial paper submission system, you must have a paid subscription to this service to use this feature. see <a href=\"http://docs.moodle.org/en/Turnitin_administration\">http://docs.moodle.org/en/Turnitin_administration</a> for more details';
 $string['configusetiimodule'] = 'Enable Turnitin submission.';
 $string['tiiaccountid'] ='Turnitin Account ID';
 $string['configtiiaccountid'] ='This is your Account ID as provided from Turnitin.com';
@@ -26,4 +26,6 @@ $string['configtiiemailprefix'] ='You must set this if you do not want students 
 $string['showstudentsscore']='Show Turnitin score to student';
 $string['showstudentsreport']='Show Turnitin report to student';
 $string['showwhenclosed']='When Activity closed';
+$string['savedconfigsuccess'] = 'Turnitin Settings Saved, and Teacher account created';
+$string['savedconfigfailure'] = 'Unable to connect/authenticate to Turnitin - you may have an incorrect Secret Key/Account ID combination or this server cannot connect to the API https://api.turnitin.com';
 ?>
