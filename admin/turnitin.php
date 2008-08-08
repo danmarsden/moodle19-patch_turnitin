@@ -29,14 +29,15 @@
             }
             foreach ($data as $field=>$value) {
                 if (strpos($field, 'turnitin')===0) {
-                    if ($tiiconfigfield = get_record('config_plugins', 'name', $field)) {
+                    if ($tiiconfigfield = get_record('config_plugins', 'name', $field, 'plugin', 'tii')) {
                         $tiiconfigfield->value = $value;
                         if (!update_record('config_plugins', $tiiconfigfield)) {
                             error("errorupdating");
                         }
                     } else {
                         $tiiconfigfield = new stdClass();
-                        $tiiconfigfield->value = value;
+                        $tiiconfigfield->value = $value;
+                        $tiiconfigfield->plugin = 'tii';
                         $tiiconfigfield->name = $field;
                         if (!insert_record('config_plugins', $tiiconfigfield)) {
                             error("errorinserting");
@@ -61,7 +62,7 @@
                     $tii['fcmd'] = '2'; //when set to 2 the TII API should return XML
                     $tii['fid'] = '1'; //set command. - create user and login to Turnitin (fid=1)
                     if (tii_post_to_api($tii, 11, 'GET','',false)) {
-                        notify(get_string('savedconfigsuccess', 'turnitin'));
+                        notify(get_string('savedconfigsuccess', 'turnitin'), 'notifysuccess');
                     } else {
                         notify(get_string('savedconfigfailure', 'turnitin'));
                     }
