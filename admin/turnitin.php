@@ -38,7 +38,7 @@
                         $tiiconfigfield = new stdClass();
                         $tiiconfigfield->value = value;
                         $tiiconfigfield->name = $field;
-                        if (insert_record('config_plugins', $tiiconfigfield)) {
+                        if (!insert_record('config_plugins', $tiiconfigfield)) {
                             error("errorinserting");
                         }
                     }
