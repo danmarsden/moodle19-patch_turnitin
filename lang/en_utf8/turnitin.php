@@ -1,6 +1,7 @@
 <?php
 $string['tii'] = 'Turnitin';
 $string['usetii'] ='Use Turnitin Submission';
+$string['adminlogin'] = 'Turnitin Admin Login';
 $string['configusetii'] = 'NOTE: you must enable TII in each respective module as well.';
 $string['tiiheading'] = 'Turnitin Submission';
 $string['tiiexplain'] = 'Turnitin is a commercial paper submission system, you must have a paid subscription to this service to use this feature. see <a href=\"http://docs.moodle.org/en/Turnitin_administration\">http://docs.moodle.org/en/Turnitin_administration</a> for more details';
@@ -22,7 +23,7 @@ $string['studentdisclosuredefault']  ='All files uploaded will be submitted to t
 $string['studentdisclosure'] = 'Student Disclosure';
 $string['configstudentdisclosure'] = 'This text will be displayed to all students on the file upload page.';
 $string['tiiemailprefix'] ='Student Email prefix';
-$string['configtiiemailprefix'] ='You must set this if you do not want students to view full reports, by logging into the turnitin.com website with their e-mail address. - this value is not used if send user e-mail is set.';
+$string['configtiiemailprefix'] ='You must set this if you do not want students to be able to log into the turnitin.com site and view full reports.';
 $string['showstudentsscore']='Show Turnitin score to student';
 $string['showstudentsreport']='Show Turnitin report to student';
 $string['showwhenclosed']='When Activity closed';

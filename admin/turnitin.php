@@ -18,11 +18,8 @@
     if ($tiiform->is_cancelled()) {
         redirect('');
 
-    } 
-    admin_externalpage_print_header();
-    
-    print_heading(get_string('tiiheading', 'turnitin'));
-    
+    }
+
         if (($data = $tiiform->get_data()) && confirm_sesskey()) {
             if (!isset($data->turnitin_use)) {
                 $data->turnitin_use = 0;
@@ -68,8 +65,29 @@
                     }
                 }
         }
-        $tiisettings = tii_get_settings();
-        $tiiform->set_data($tiisettings);
+     $tiisettings = tii_get_settings();
+     $tiiform->set_data($tiisettings);
+     
+    admin_externalpage_print_header();   
+    
+    if ($tiisettings) {
+        //Now show link to ADMIN tii interface - NOTE: this logs in the ADMIN user, should be hidden from normal teachers.
+        $tii['uid']      = $tiisettings['turnitin_userid'];        
+        $tii['username'] = $tiisettings['turnitin_userid'];
+        $tii['uem']      = $tiisettings['turnitin_email'];
+        $tii['ufn']      = $tiisettings['turnitin_firstname'];
+        $tii['uln']      = $tiisettings['turnitin_lastname'];
+        $tii['utp']      = '2'; //2 = this user is an instructor
+        $tii['utp'] = '3';
+        $tii['fcmd'] = '1'; //when set to 2 this returns XML                     
+        $tii['fid'] = '12'; //set commands - Administrator login/statistics.
+        echo '<div align="right">';
+        print_single_button(tii_get_url($tii), '',get_string("adminlogin","turnitin"), 'get', '_blank');
+        echo '</div>';        
+
+    }
+
+    print_heading(get_string('tiiheading', 'turnitin'));
 
     print_box(get_string('tiiexplain', 'turnitin'));
     

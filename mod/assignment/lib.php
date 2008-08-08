@@ -375,45 +375,6 @@ class assignment_base {
 
                 add_event($event);
             }
-            //now do call to turnitin if required.
-            if (isset($assignment->use_tii_submission) && $assignment->use_tii_submission) {
-                include_once($CFG->libdir.'/turnitinlib.php');
-                if ($tiisettings = tii_get_settings()) { //get tii settings.
-                    $tii = array();
-                    //set globals.
-                    $tii['username'] = $tiisettings['turnitin_userid'];
-                    $tii['uem']      = $tiisettings['turnitin_email'];
-                    $tii['ufn']      = $tiisettings['turnitin_firstname'];
-                    $tii['uln']      = $tiisettings['turnitin_lastname'];
-                    $tii['uid']      = $tiisettings['turnitin_userid'];
-                    $tii['utp']      = '2'; //2 = this user is an instructor
-                    $tii['cid']      = $tiisettings['turnitin_courseprefix'].$COURSE->id.$COURSE->shortname; //course ID 
-                    $tii['ctl']      = $tiisettings['turnitin_courseprefix'].$COURSE->id.$COURSE->shortname; //Course title.  -this uses Course->id and shortname to ensure uniqueness.
-                    //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
-
-                    $tii['fcmd'] = '2'; //when set to 2 the TII API should return XML                         
-                    $tii['fid'] = '2'; // create class under the given account and assign above user as instructor (fid=2)
-                    //$tii['diagnostic'] = '1';
-                    if (tii_post_to_api($tii, 21, 'GET','',false)) {
-                        //now create Assignment in Class
-                        $tii['assignid'] = $tiisettings['turnitin_courseprefix']. '_'.$assignment->name.'_'.$returnid; //assignment ID - uses $returnid to ensure uniqueness
-                        $tii['assign']   = $tiisettings['turnitin_courseprefix']. '_'.$assignment->name.'_'.$returnid; //assignment name stored in TII
-                        $tii['fid']      = '4';
-                        $tii['ptl']      = $COURSE->id.$COURSE->shortname; //paper title? - assname?
-                        $tii['ptype']    = '2'; //filetype
-                        $tii['pfn']      = $tii['ufn'];
-                        $tii['pln']      = $tii['uln'];
-                        $tii['dtstart']  = gmdate('Ymd', time()-86400); //need to fix this to use the assignment date.
-                        $tii['dtdue']    = '20081010'; //need to fix this so it is more correct.
-                        $tii['s_view_report'] = '1';
-                        //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
-                        if (tii_post_to_api($tii, 41, 'POST','',false)) {
-                            debugging("Success creating user, Class and assignment!", DEBUG_DEVELOPER);
-                        }
-                    }
-                }            
-            } //done all that is needed for tii creation.
-
             $assignment = stripslashes_recursive($assignment);
             assignment_grade_item_update($assignment);
 
@@ -513,45 +474,6 @@ class assignment_base {
         } else {
             delete_records('event', 'modulename', 'assignment', 'instance', $assignment->id);
         }
-//TODO - check if this tii ass exists and don't insert if it does, but update instead!
-                //now do call to turnitin if required.
-                if (isset($assignment->use_tii_submission) && $assignment->use_tii_submission) {
-                    include_once($CFG->libdir.'/turnitinlib.php');
-                    if ($tiisettings = tii_get_settings()) { //get tii settings.
-                        $tii = array();
-                        //set globals.
-            
-                        $tii['username'] = $tiisettings['turnitin_userid'];
-                        $tii['uem']      = $tiisettings['turnitin_email'];
-                        $tii['ufn']      = $tiisettings['turnitin_firstname'];
-                        $tii['uln']      = $tiisettings['turnitin_lastname'];
-                        $tii['uid']      = $tiisettings['turnitin_userid'];
-                        $tii['utp']      = '2'; //2 = this user is an instructor
-                        $tii['cid']      = $tiisettings['turnitin_courseprefix'].$COURSE->id.$COURSE->shortname; //course ID //may need to include sitename in this to allow more than 1 moodle site with the same TII account to use TII API
-                        $tii['ctl']      = $tiisettings['turnitin_courseprefix'].$COURSE->id.$COURSE->shortname; //Course title.  -this uses Course->id and shortname to ensure uniqueness.
-
-                        $tii['fcmd'] = '2'; //when set to 2 the TII API should return XML
-                        $tii['fid'] = '2'; //now create class under the given account and assign above user as instructor (fid=2)
-                        //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
-                        if (tii_post_to_api($tii, 21, 'GET','',false)) {                            
-                            //now create Assignment in Class
-                            $tii['assignid'] = $tiisettings['turnitin_courseprefix']. '_'.$assignment->name.'_'.$assignment->id; //assignment ID - uses $returnid to ensure uniqueness
-                            $tii['assign']   = $tiisettings['turnitin_courseprefix']. '_'.$assignment->name.'_'.$assignment->id; //assignment name stored in TII
-                            $tii['fid']      = '4';
-                            $tii['ptl']      = $tiisettings['turnitin_courseprefix'].$COURSE->id.$COURSE->shortname; //paper title? - assname?
-                            $tii['ptype']    = '2'; //filetype
-                            $tii['pfn']      = $tii['ufn'];
-                            $tii['pln']      = $tii['uln'];
-                            $tii['dtstart']  = gmdate('Ymd', time()-86400); //need to fix this to use the assignment date.
-                            $tii['dtdue']    = '20081010'; //need to fix this so it is more correct.
-                            $tii['s_view_report'] = '1';
-                            //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
-                            if (tii_post_to_api($tii, 41, 'POST','',false)) {
-                                debugging("Success creating user, Class and assignment!", DEBUG_DEVELOPER);
-                            }
-                        }
-                    }
-                } //done all that is needed for tii creation.
 
         // get existing grade item
         $assignment = stripslashes_recursive($assignment);
@@ -1145,24 +1067,6 @@ class assignment_base {
                 . get_string('seeallcoursegrades', 'grades') . '</a></div>';
         }
 
-        /* ***This is old that won't work - not sure if I want to implement this yet - maybe shift it to the admin/config/assignment screen?
-        //Now show link to ADMIN tii interface - NOTE: this logs in the ADMIN user, should be hidden from normal teachers.
-        include_once($CFG->libdir.'/turnitinlib.php');
-        $tii['user'] = $USER;
-        $tii['utp'] = '3';
-        $tii['assignid'] = $assignment->id;
-        $tii['assign'] = $assignment->name;
-        $tii['cid'] = $COURSE->id;
-        $tii['ctl'] = $COURSE->fullname;
-        $tii['dis'] = '1';
-        $tii['tem'] = $CFG->noreplyaddress;
-        $tii['fcmid'] = '1'; //when set to 2 this returns XML
-        
-        
-        //set commands. - cre-ate user and login student to Turnitin (fid=1)
-        $tii['fid'] = '12';
-        echo "<a href='".tii_get_url($tii)."' target='_blank'>Turnitin Admin Login</a>";
-*/
         if (!empty($message)) {
             echo $message;   // display messages here if any
         }
