@@ -325,8 +325,12 @@ function tii_send_files() {
                         $tii['pfn']      = $tii['ufn'];
                         $tii['pln']      = $tii['uln'];
                         $tii['dtstart']  = gmdate('Ymd', time()-86400); //need to fix this to use the assignment date.
-                        $tii['dtdue']    = '20081010'; //need to fix this so it is more correct.
-                        $tii['s_view_report'] = '1';
+                        if (!empty($module->timedue)) {
+                            $tii['dtdue']    = gmdate('Ymd', $module->timedue); 
+                        } else {
+                            $tii['dtdue']    = gmdate('Ymd', time()+ (30 * 24 * 60 * 60)); //set to 30 days in future if not set by the module.
+                        }
+                        $tii['s_view_report'] = '1'; //allow students to view the full report.
                         //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
                         $rcode = tii_post_to_api($tii, 41, 'POST','',false, true);
                         if ($rcode=='41' or $rcode=='42' or $rcode=='419') { //if assignment created/modified or already exists.
