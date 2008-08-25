@@ -451,8 +451,8 @@ function tii_get_report_link($file, $userid='') {
     if ($tiisettings = tii_get_settings()) { //get tii settings.
         $tii = array();
         $courseshortname = get_field('course', 'shortname', 'id', $file->course);
-        if (!empty($userid)) {
-            $user = get_record('user', 'id', $userid);
+        if (!has_capability('mod/assignment:grade', get_context_instance(CONTEXT_MODULE, $file->instance))) {
+            $user = get_record('user', 'id', $file->userid);
         
             $tii['username'] = $user->username;
             $tii['uem']      = $user->email;
