@@ -41,7 +41,7 @@ class assignment_uploadsingle extends assignment_base {
                                                             "' AND userid='".$userid.
                                                             "' AND filename='".$file.
                                                             "' AND tiicode='success'");
-                                   if (!empty($tiifile->tiiscore)) {
+                                   if (isset($tiifile->tiiscore)) {
                                         if (has_capability('moodle/turnitin:viewfullreport', $this->context)) { 
                                             $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a>'.$tiifile->tiiscore.'%';
                                         } else {
@@ -216,8 +216,8 @@ class assignment_uploadsingle extends assignment_base {
                 $mform->addElement('select', 'use_tii_submission', get_string("usetii", "turnitin"), $ynoptions);
                 //$mform->setHelpButton('use_tii_submission', array('use_tii_submission', get_string('use_tii_submission', 'local'), 'assignment'));
                 $mform->setDefault('use_tii_submission', 0);
-                
-                                $tiioptions = array();
+
+                $tiioptions = array();
                 $tiioptions[0] = get_string("never");
                 $tiioptions[1] = get_string("always");
                 $tiioptions[2] = get_string("showwhenclosed", "turnitin");

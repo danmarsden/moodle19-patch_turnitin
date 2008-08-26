@@ -321,7 +321,7 @@ class assignment_upload extends assignment_base {
                                                             "' AND userid='".$userid.
                                                             "' AND filename='".$file.
                                                             "' AND tiicode='success'");
-                                   if (!empty($tiifile->tiiscore)) {
+                                   if (isset($tiifile->tiiscore)) {
                                         if (has_capability('moodle/turnitin:viewfullreport', $this->context)) { 
                                             $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a>'.$tiifile->tiiscore.'%';
                                         } else {
@@ -413,7 +413,7 @@ class assignment_upload extends assignment_base {
                                                             "' AND userid='".$userid.
                                                             "' AND filename='".$file.
                                                             "' AND tiicode='success'");
-                                   if (!empty($tiifile->tiiscore)) {
+                                   if (isset($tiifile->tiiscore)) {
                                         if ($this->assignment->tii_show_student_report==2 or $this->assignment->tii_show_student_report==1) { 
                                             $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').'</a>';
                                             if ($this->assignment->tii_show_student_score==1 or ($this->assignment->tii_show_student_score==2 && $this->assignopen)) {
