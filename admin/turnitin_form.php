@@ -22,7 +22,7 @@ class turnitin_form extends moodleform {
         //$mform->addRule('turnitin_accountid', null, 'required', null, 'client');
         $mform->addRule('turnitin_accountid', null, 'numeric', null, 'client');
         
-        $mform->addElement('text', 'turnitin_secretkey', get_string('tiisecretkey', 'turnitin'));
+        $mform->addElement('passwordunmask', 'turnitin_secretkey', get_string('tiisecretkey', 'turnitin'));
         $mform->addElement('static','turnitin_secretkey_description', '', get_string('configtiisecretkey', 'turnitin'));
         $mform->addRule('turnitin_secretkey', null, 'required', null, 'client');
                 
