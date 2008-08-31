@@ -111,7 +111,7 @@ function tii_get_url($tii, $returnArray=false) {
     if ($returnArray) {
         return $tii;
     } else {
-        $url = "https://api.turnitin.com/api.asp"."?";
+        $url = $tiisettings['turnitin_api']."?";
         foreach ($tii as $key => $value) {
             $url .= $key .'='. $value. '&';
         }
@@ -179,8 +179,10 @@ function tii_get_xml($url) {
 
 function tii_post_data($tii, $file='') {
     $tiicomplete = tii_get_url($tii, 'array');
+    
+    $tiisettings = get_records_menu('config_plugins', 'plugin', 'tii', '', 'name,value');
 
-    $ch = curl_init("https://api.turnitin.com/api.asp"); 
+    $ch = curl_init($tiisettings['turnitin_api']); 
 
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE); 
 

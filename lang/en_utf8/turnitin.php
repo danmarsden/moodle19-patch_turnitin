@@ -1,6 +1,8 @@
 <?php
 $string['tii'] = 'Turnitin';
 $string['usetii'] ='Use Turnitin Submission';
+$string['tiiapi'] = 'Turnitin API';
+$string['configtiiapi'] = 'This is the address of the Turnitin API - usually https://api.turnitin.com/api.asp';
 $string['adminlogin'] = 'Turnitin Admin Login';
 $string['configusetii'] = 'NOTE: you must enable TII in each respective module as well.';
 $string['tiiheading'] = 'Turnitin Submission';
@@ -28,7 +30,7 @@ $string['showstudentsscore']='Show Turnitin score to student';
 $string['showstudentsreport']='Show Turnitin report to student';
 $string['showwhenclosed']='When Activity closed';
 $string['savedconfigsuccess'] = 'Turnitin Settings Saved, and Teacher account created';
-$string['savedconfigfailure'] = 'Unable to connect/authenticate to Turnitin - you may have an incorrect Secret Key/Account ID combination or this server cannot connect to the API https://api.turnitin.com';
+$string['savedconfigfailure'] = 'Unable to connect/authenticate to Turnitin - you may have an incorrect Secret Key/Account ID combination or this server cannot connect to the API';
 $string['defaultuse'] = 'Use Default';
 $string['configdefault'] = 'This is a default setting for the assignment creation page. Only users with the capability moodle/turnitin:enableturnitin can change this setting for an individual assignment';
 $string['defaultshowscore'] ='Show Score Default';

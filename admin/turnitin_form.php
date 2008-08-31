@@ -17,6 +17,11 @@ class turnitin_form extends moodleform {
         $mform->addElement('checkbox', 'turnitin_use', get_string('usetii', 'turnitin'));
         $mform->addElement('static','turnitin_use_description', '', get_string('configusetii', 'turnitin'));  
         
+        $mform->addElement('text', 'turnitin_api', get_string('tiiapi', 'turnitin'));
+        $mform->addElement('static','turnitin_api_description', '', get_string('configtiiapi', 'turnitin'));
+        $mform->addRule('turnitin_api', null, 'required', null, 'client');
+        $mform->setDefault('turnitin_api', 'https://api.turnitin.com/api.asp');
+        
         $mform->addElement('text', 'turnitin_accountid', get_string('tiiaccountid', 'turnitin'));
         $mform->addElement('static','turnitin_accountid_description', '', get_string('configtiiaccountid', 'turnitin'));
         //$mform->addRule('turnitin_accountid', null, 'required', null, 'client');
