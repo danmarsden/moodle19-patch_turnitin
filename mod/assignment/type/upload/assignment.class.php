@@ -1139,7 +1139,7 @@ class assignment_upload extends assignment_base {
         if (isset($tii) && $tii && isset($CFG->assignment_use_tii_submission) && $CFG->assignment_use_tii_submission) { //if tii enabled, allow teachers to elect to use it.
             if (has_capability('moodle/turnitin:enableturnitin', $course_context)) {
                 $mform->addElement('select', 'use_tii_submission', get_string("usetii", "turnitin"), $ynoptions);
-                $mform->setDefault('use_tii_submission', 0);
+                $mform->setDefault('use_tii_submission', $CFG->assignment_turnitin_default_use);
                 
                 $tiioptions = array();
                 $tiioptions[0] = get_string("never");
@@ -1147,19 +1147,19 @@ class assignment_upload extends assignment_base {
                 $tiioptions[2] = get_string("showwhenclosed", "turnitin");
                 
                 $mform->addElement('select', 'tii_show_student_score', get_string("showstudentsscore", "turnitin"), $tiioptions);
-                $mform->setDefault('tii_show_student_score', 0);
+                $mform->setDefault('tii_show_student_score', $CFG->assignment_turnitin_default_showscore);
 
                 $mform->addElement('select', 'tii_show_student_report', get_string("showstudentsreport", "turnitin"), $tiioptions);
-                $mform->setDefault('tii_show_student_report', 0);
+                $mform->setDefault('tii_show_student_report', $CFG->assignment_turnitin_default_showreport);
 
             } else {
                 //add some hidden vars here.
-                $mform->addElement('hidden', 'use_tii_submission', get_string("usetii", "turnitin"), $ynoptions);
-                $mform->setDefault('use_tii_submission', 0);
-                $mform->addElement('hidden', 'tii_show_student_score', get_string("showstudentsscore", "turnitin"), $tiioptions);
-                $mform->setDefault('tii_show_student_score', 0);
-                $mform->addElement('hidden', 'tii_show_student_report', get_string("showstudentsreport", "turnitin"), $tiioptions);
-                $mform->setDefault('tii_show_student_report', 0);
+                $mform->addElement('hidden', 'use_tii_submission', get_string("usetii", "turnitin"));
+                $mform->setDefault('use_tii_submission', $CFG->assignment_turnitin_default_use);
+                $mform->addElement('hidden', 'tii_show_student_score', get_string("showstudentsscore", "turnitin"));
+                $mform->setDefault('tii_show_student_score', $CFG->assignment_turnitin_default_showscore);
+                $mform->addElement('hidden', 'tii_show_student_report', get_string("showstudentsreport", "turnitin"));
+                $mform->setDefault('tii_show_student_report', $CFG->assignment_turnitin_default_showreport);
             }
         }
     }
