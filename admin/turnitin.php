@@ -82,15 +82,14 @@
         $tii['fcmd'] = '1'; //when set to 2 this returns XML                     
         $tii['fid'] = '12'; //set commands - Administrator login/statistics.
         echo '<div align="right">';
-        print_single_button(tii_get_url($tii), '',get_string("adminlogin","turnitin"), 'get', '_blank');
-        echo '</div>';        
-
+        echo '<a href="'.tii_get_url($tii).'" target="_blank">'.get_string("adminlogin","turnitin").'</a>';
+        echo '</div>';
     }
 
     print_heading(get_string('tiiheading', 'turnitin'));
 
     print_box(get_string('tiiexplain', 'turnitin'));
-    
+
     print_simple_box_start('center','90%','','20');
 
     $tiiform->display();

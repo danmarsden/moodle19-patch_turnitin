@@ -18,11 +18,20 @@
 
     print_box(get_string('tiiexplainerrors', 'turnitin'));
 
-    if ($resetuser && $fileid) {
+    if ($resetuser==1 && $fileid) {
         $tfile = get_record('tii_files', 'id', $fileid);
         $tfile->tiicode = 'pending';
         if (update_record('tii_files', $tfile)) {
             notify("File reset");
+        }
+    } elseif ($resetuser==2) {
+        $sql = "tiicode <>'success' AND tiicode<>'pending'";
+        $tiifiles = get_records_select('tii_files', $sql);
+        foreach($tiifiles as $tiifile) {
+            $tiifile->tiicode = 'pending';
+            if (update_record('tii_files', $tiifile)) {
+                notify("File reset");
+            }        
         }
     }
     
@@ -78,7 +87,9 @@
         
         
         $table->print_html();
-    
-    
+        echo '<br/><br/><div align="center">';
+        $options["reset"] = "2";    
+        print_single_button("turnitin_errors.php", $options, get_string("resetall", "turnitin"));
+        echo '</div>';
     admin_externalpage_print_footer();
 ?>

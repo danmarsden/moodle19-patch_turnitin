@@ -37,5 +37,6 @@ $string['defaultshowscore'] ='Show Score Default';
 $string['defaultshowreport'] = 'Show Report Default';
 $string['tiierror'] = '<a href=\"http://docs.moodle.org/en/Turnitin_errors\">TII Error:$a</a>';
 $string['turnitinerrors'] = 'Turnitin Errors';
-$string['tiiexplainerrors'] = 'This page lists any files submitted to Turnitin that are currently in an Error state. An list of turnitin Error codes and their description is available here:<a href=\"http://docs.moodle.org/en/Turnitin_errors\">docs.moodle.org/en/Turnitin_errors</a>';
+$string['tiiexplainerrors'] = 'This page lists any files submitted to Turnitin that are currently in an error state. An list of turnitin Error codes and their description is available here:<a href=\"http://docs.moodle.org/en/Turnitin_errors\">docs.moodle.org/en/Turnitin_errors</a>';
+$string['resetall'] = 'Reset All';
 ?>
