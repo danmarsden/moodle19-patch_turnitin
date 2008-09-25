@@ -434,7 +434,7 @@ function tii_get_scores() {
                $tii['oid']      = $file->tii;
 
                $tiiscore = tii_post_to_api($tii, 61, 'GET', $file, false);
-               if (isset($tiiscore)) {
+               if (isset($tiiscore) && $tiiscore) {
                    $file->tiiscore = $tiiscore;
                    $file->tiicode = 'success';
                    $count++;

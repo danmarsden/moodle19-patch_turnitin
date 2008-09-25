@@ -40,13 +40,15 @@ class assignment_uploadsingle extends assignment_base {
                                                             "' AND instance='".$submission->assignment.
                                                             "' AND userid='".$userid.
                                                             "' AND filename='".$file.
-                                                            "' AND tiicode='success'");
-                                   if (isset($tiifile->tiiscore)) {
+                                                            "' AND tiicode<>'pending'");
+                                   if (isset($tiifile->tiiscore) && $tiifile->tiicode=='success') {
                                         if (has_capability('moodle/turnitin:viewfullreport', $this->context)) { 
                                             $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a>'.$tiifile->tiiscore.'%';
                                         } else {
                                             $output .= '&nbsp;'.get_string('similarity', 'turnitin').':'.$tiifile->tiiscore.'%';
                                         }
+                                   } elseif(isset($tiifile->tiicode)) {
+                                       $output .='&nbsp;'.get_string('tiierror', 'turnitin',$tiifile->tiicode);
                                    }
                                }
                            }

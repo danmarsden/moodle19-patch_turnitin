@@ -142,7 +142,8 @@ if ($hassiteconfig) {
             }
         }
     }
-    $ADMIN->add('modsettings', new admin_externalpage('turnitin',get_string('tii', 'turnitin'), "$CFG->wwwroot/$CFG->admin/turnitin.php", 'moodle/site:config'));    
+    $ADMIN->add('modsettings', new admin_externalpage('turnitin',get_string('tii', 'turnitin'), "$CFG->wwwroot/$CFG->admin/turnitin.php", 'moodle/site:config'));
+    $ADMIN->add('modsettings', new admin_externalpage('turnitin_errors',get_string('turnitinerrors', 'turnitin'), "$CFG->wwwroot/$CFG->admin/turnitin_errors.php", 'moodle/site:config'));
 }
 
 
