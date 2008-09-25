@@ -10,10 +10,21 @@
     
     $context = get_context_instance(CONTEXT_SYSTEM);
 
+    $fileid = optional_param('fileid',0,PARAM_INT);
+    $resetuser = optional_param('reset',0,PARAM_INT);
+    
     admin_externalpage_print_header();   
     print_heading(get_string('turnitinerrors', 'turnitin'));
 
     print_box(get_string('tiiexplainerrors', 'turnitin'));
+
+    if ($resetuser && $fileid) {
+        $tfile = get_record('tii_files', 'id', $fileid);
+        $tfile->tiicode = 'pending';
+        if (update_record('tii_files', $tfile)) {
+            notify("File reset");
+        }
+    }
     
         $tablecolumns = array('name', 'course', 'file', 'status');
         $tableheaders = array(get_string('name'),
@@ -28,7 +39,7 @@
         $table->define_headers($tableheaders);
         $table->define_baseurl($CFG->wwwroot.'/admin/turnitin_errors.php');
 
-        $table->sortable(true, 'lastname');//sorted by lastname by default
+        $table->sortable(false);
         $table->collapsible(true);
         $table->initialbars(false);
 
@@ -57,9 +68,10 @@
         $tiifiles = get_records_select('tii_files', $sql);
         foreach($tiifiles as $tiifile) {
             //should tidy these up - shouldn't need to call so often
+            $reset = $tiifile->tiicode.'&nbsp;<a href="turnitin_errors.php?reset=1&fileid='.$tiifile->id.'">reset</a>';
             $user = get_record('user', 'id', $tiifile->userid);
             $course = get_record('course', 'id', $tiifile->course);
-            $row = array(fullname($user), $course->shortname, $tiifile->filename, $tiifile->tiicode);
+            $row = array(fullname($user), $course->shortname, $tiifile->filename, $reset);
         
             $table->add_data($row);
         }
