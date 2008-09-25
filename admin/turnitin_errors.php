@@ -87,9 +87,11 @@
         
         
         $table->print_html();
-        echo '<br/><br/><div align="center">';
-        $options["reset"] = "2";    
-        print_single_button("turnitin_errors.php", $options, get_string("resetall", "turnitin"));
-        echo '</div>';
-    admin_externalpage_print_footer();
+        if (!empty($tiifiles)) {
+            echo '<br/><br/><div align="center">';
+            $options["reset"] = "2";    
+            print_single_button("turnitin_errors.php", $options, get_string("resetall", "turnitin"));
+            echo '</div>';
+        }
+        admin_externalpage_print_footer();
 ?>
