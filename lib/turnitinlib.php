@@ -338,8 +338,12 @@ function tii_send_files() {
                         if ($rcode=='41' or $rcode=='42' or $rcode=='419') { //if assignment created/modified or already exists.
                             $processedmodules[$moduletype][$module->id] = true; //Only do the last 2 calls once per cron.
                             mtrace("Success getting user, Class and assignment");
+                        } else {
+                            mtrace("Error: could not create assignment in class");
                         }
-                    }                             
+                    } else {
+                        mtrace("Error: could not create class and assign global instructor");
+                    }                            
                }
                //now send the files.
                //if this module and assignment have been created successfully, send the files to Turnitin!
