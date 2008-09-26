@@ -339,10 +339,10 @@ function tii_send_files() {
                             $processedmodules[$moduletype][$module->id] = true; //Only do the last 2 calls once per cron.
                             mtrace("Success getting user, Class and assignment");
                         } else {
-                            mtrace("Error: could not create assignment in class");
+                            mtrace("Error: could not create assignment in class TIICODE:".$rcode);
                         }
                     } else {
-                        mtrace("Error: could not create class and assign global instructor");
+                        mtrace("Error: could not create class and assign global instructor TIICODE:".$rcode);
                     }                            
                }
                //now send the files.
