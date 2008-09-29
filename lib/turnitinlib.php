@@ -94,7 +94,7 @@ function tii_get_url($tii, $returnArray=false) {
     $tii['gmtime']  = tii_get_gmtime();
     $tii['aid']     = $tiisettings['turnitin_accountid'];
     $tii['version'] = 'Moodle_19'; //maybe change this to get $CFG->version - only really used by TII for stats reasons. - we don't need this.
-    
+
     //prepare $tii for md5string - need to urldecode before generating the md5.
     $tiimd5 = array();
     foreach($tii as $key => $value) {
@@ -167,8 +167,8 @@ function tii_get_md5string($tii){
 
 //this function gets the xml from Turnitin when provided a URL
 function tii_get_xml($url) {
-    require_once("filelib.php"); 
-    if (!($fp = download_file_content($url))) { 
+    require_once("filelib.php");
+    if (!($fp = download_file_content($url))) {
         error("error trying to open Turnitin XML file!".$url);
     } else {
             //now do something with the XML file to check to see if this has worked!
@@ -179,14 +179,14 @@ function tii_get_xml($url) {
 
 function tii_post_data($tii, $file='') {
     $tiicomplete = tii_get_url($tii, 'array');
-    
+
     $tiisettings = get_records_menu('config_plugins', 'plugin', 'tii', '', 'name,value');
 
-    $ch = curl_init($tiisettings['turnitin_api']); 
+    $ch = curl_init($tiisettings['turnitin_api']);
 
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE); 
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
 
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2); 
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
 
     if (!empty($file)) { //send file if that's passed as well!
         $tiicomplete['pdata'] = '@'.$file;
@@ -259,10 +259,10 @@ function tii_post_to_api($tii, $success, $action='GET', $file='', $savercode='tr
 
 }
 function tii_get_settings() {
-   
+
    $tiisettings = get_records_menu('config_plugins', 'plugin', 'tii', '', 'name,value');
    //check if tii enabled.
-   if (isset($tiisettings['turnitin_use']) && $tiisettings['turnitin_use'] && isset($tiisettings['turnitin_accountid']) && $tiisettings['turnitin_accountid']) { 
+   if (isset($tiisettings['turnitin_use']) && $tiisettings['turnitin_use'] && isset($tiisettings['turnitin_accountid']) && $tiisettings['turnitin_accountid']) {
       //now check to make sure required settings are set!
       if (empty($tiisettings['turnitin_secretkey'])) {
         error("Turnitin Secret Key not set!");
@@ -292,14 +292,14 @@ function tii_send_files() {
         //get all files set to "pending"
         $files = get_records('tii_files','tiicode','pending');
         if (!empty($files)) {
-            foreach($files as $file) {           
+            foreach($files as $file) {
                //set globals.
                $user = get_record('user', 'id', $file->userid);
                $course = get_record('course', 'id', $file->course);
                $moduletype = get_field('modules','name', 'id', $file->module);
                $module = get_record($moduletype, 'id', $file->instance);
-               
-               if (!(isset($processedmodules[$moduletype][$module->id]) && $processedmodules[$moduletype][$module->id])) {              
+
+               if (!(isset($processedmodules[$moduletype][$module->id]) && $processedmodules[$moduletype][$module->id])) {
                    //first set up this assignment/assign the global teacher to this course.
                     $tii = array();
                     //set globals.
@@ -309,14 +309,14 @@ function tii_send_files() {
                     $tii['uln']      = $tiisettings['turnitin_lastname'];
                     $tii['uid']      = $tiisettings['turnitin_userid'];
                     $tii['utp']      = '2'; //2 = this user is an instructor
-                    $tii['cid']      = $tiisettings['turnitin_courseprefix'].$course->id.$course->shortname; //course ID 
+                    $tii['cid']      = $tiisettings['turnitin_courseprefix'].$course->id.$course->shortname; //course ID
                     $tii['ctl']      = $tiisettings['turnitin_courseprefix'].$course->id.$course->shortname; //Course title.  -this uses Course->id and shortname to ensure uniqueness.
                     //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
 
-                    $tii['fcmd'] = '2'; //when set to 2 the TII API should return XML                         
+                    $tii['fcmd'] = '2'; //when set to 2 the TII API should return XML
                     $tii['fid'] = '2'; // create class under the given account and assign above user as instructor (fid=2)
                     //$tii['diagnostic'] = '1';
-                    $rcode = tii_post_to_api($tii, 21, 'GET','',false); 
+                    $rcode = tii_post_to_api($tii, 21, 'GET','',false);
                     if ($rcode=='21' or $rcode=='20' or $rcode=='22') { //these rcodes signify that this assignment exists, or has been successfully updated.
                         //now create Assignment in Class
                         $tii['assignid'] = $tiisettings['turnitin_courseprefix']. '_'.$module->name.'_'.$module->id; //assignment ID - uses $returnid to ensure uniqueness
@@ -343,7 +343,7 @@ function tii_send_files() {
                         }
                     } else {
                         mtrace("Error: could not create class and assign global instructor TIICODE:".$rcode);
-                    }                            
+                    }
                }
                //now send the files.
                //if this module and assignment have been created successfully, send the files to Turnitin!
@@ -369,7 +369,7 @@ function tii_send_files() {
                        $tii2['fid']      = '3';
                        //$tii2['diagnostic'] = '1';
                        if (tii_post_to_api($tii2, 31, 'GET', $file)) {
-                           //now get details on the uploaded file!!                         
+                           //now get details on the uploaded file!!
                            $modname = $moduletype;
                            $modfile = "$CFG->dirroot/mod/$modname/lib.php";
                            $modfunc = $modname."_get_tii_file_info";
@@ -383,7 +383,7 @@ function tii_send_files() {
                                debugging("no filepath found for this file!");
                                exit;
                            }
-                        
+
                            if (!file_exists($file->fileinfo->filepath.$file->filename)) {
                                debugging("file not found in path:".$file->fileinfo->filepath.$file->filename);
                                exit;
@@ -393,7 +393,7 @@ function tii_send_files() {
                            //now submit this uploaded file to Tii! (fid=5)
                            $tii2['utp']     = '1'; //2 = instructor, 1= student.
                            $tii2['fid']     = '5';
-                           $tii2['ptl']     = $file->filename; //paper title 
+                           $tii2['ptl']     = $file->filename; //paper title
                            $tii2['ptype']   = '2'; //filetype
                            $tii2['pfn']     = $tii['ufn'];
                            $tii2['pln']     = $tii['uln'];
@@ -407,7 +407,7 @@ function tii_send_files() {
                } //done all that is needed for tii submission..
            }
        }
-       mtrace("sent ".$count." files"); 
+       mtrace("sent ".$count." files");
    }
 }
 
@@ -421,10 +421,10 @@ function tii_get_scores() {
         //print_object($files);
         if (!empty($files)) {
             foreach($files as $file) {
-               //set globals.          
+               //set globals.
                $user = get_record('user', 'id', $file->userid);
                $course = get_record('course', 'id', $file->course);
-           
+
                $tii['username'] = $user->username;
                $tii['uem']      = $user->email;
                $tii['ufn']      = $user->firstname;
@@ -445,10 +445,10 @@ function tii_get_scores() {
                    if (!update_record('tii_files', $file)) {
                        debugging("update tii score failed");
                    }
-               }      
+               }
             }
         }
-        mtrace("received ".$count." new scores"); 
+        mtrace("received ".$count." new scores");
     }
 }
 
@@ -456,10 +456,11 @@ function tii_get_report_link($file, $userid='') {
     $return = '';
     if ($tiisettings = tii_get_settings()) { //get tii settings.
         $tii = array();
-        $courseshortname = get_field('course', 'shortname', 'id', $file->course);
-        if (!has_capability('mod/assignment:grade', get_context_instance(CONTEXT_MODULE, $file->instance))) {
+        $courseshortname = get_field('course', 'shortname', 'id', $file->course); //TODO: Dan - I don't like calling these 2 queries each time for performance
+        $cmid = get_field('course_modules', 'id', 'course', $file->course, 'module', $file->module, 'instance', $file->instance);
+        if (!has_capability('mod/assignment:grade', get_context_instance(CONTEXT_MODULE, $cmid))) {
             $user = get_record('user', 'id', $file->userid);
-        
+
             $tii['username'] = $user->username;
             $tii['uem']      = $user->email;
             $tii['ufn']      = $user->firstname;

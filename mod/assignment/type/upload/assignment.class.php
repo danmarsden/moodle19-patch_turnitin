@@ -304,14 +304,14 @@ class assignment_upload extends assignment_base {
                 foreach ($files as $key => $file) {
                     $icon = mimeinfo('icon', $file);
                     $ffurl = get_file_url("$filearea/$file");
-                    
+
                     $output .= '<a href="'.$ffurl.'" ><img class="icon" src="'.$CFG->pixpath.'/f/'.$icon.'" alt="'.$icon.'" />'.$file.'</a>&nbsp;';
                     //now get TII stuff if enabled
                        $moduleid = get_field('modules', 'id','name','assignment');
                        $assignment = get_record('assignment', 'id', $submission->assignment);
-                       
+
                        if (isset($assignment->use_tii_submission) && $assignment->use_tii_submission) {
-                        
+
                            if (has_capability('moodle/turnitin:viewsimilarityscore', $this->context)) {
                                include_once($CFG->libdir.'/turnitinlib.php');
                                if ($tiisettings = tii_get_settings()) {
@@ -320,9 +320,9 @@ class assignment_upload extends assignment_base {
                                                             "' AND instance='".$submission->assignment.
                                                             "' AND userid='".$userid.
                                                             "' AND filename='".$file.
-                                                            "' AND tiicode<>'pending'");
+                                                            "' AND tiicode<>'pending' AND tiicode<>'51'");
                                    if (isset($tiifile->tiiscore) && $tiifile->tiicode=='success') {
-                                        if (has_capability('moodle/turnitin:viewfullreport', $this->context)) { 
+                                        if (has_capability('moodle/turnitin:viewfullreport', $this->context)) {
                                             $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a>'.$tiifile->tiiscore.'%';
                                         } else {
                                             $output .= '&nbsp;'.get_string('similarity', 'turnitin').':'.$tiifile->tiiscore.'%';
@@ -332,8 +332,8 @@ class assignment_upload extends assignment_base {
                                    }
                                }
                            }
-                       }                 
-                    
+                       }
+
                 }
             }
         }
@@ -416,7 +416,7 @@ class assignment_upload extends assignment_base {
                                                             "' AND filename='".$file.
                                                             "' AND tiicode='success'");
                                    if (isset($tiifile->tiiscore)) {
-                                        if ($this->assignment->tii_show_student_report==2 or $this->assignment->tii_show_student_report==1) { 
+                                        if ($this->assignment->tii_show_student_report==2 or $this->assignment->tii_show_student_report==1) {
                                             $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').'</a>';
                                             if ($this->assignment->tii_show_student_score==1 or ($this->assignment->tii_show_student_score==2 && $this->assignopen)) {
                                                 $output .= ':'.$tiifile->tiiscore.'%';
@@ -693,7 +693,7 @@ class assignment_upload extends assignment_base {
                 $this->view_footer();
                 die;
             }
-            
+
             redirect('view.php?id='.$this->cm->id);
         }
         $this->view_header(get_string('upload'));
@@ -1142,12 +1142,12 @@ class assignment_upload extends assignment_base {
             if (has_capability('moodle/turnitin:enableturnitin', $course_context)) {
                 $mform->addElement('select', 'use_tii_submission', get_string("usetii", "turnitin"), $ynoptions);
                 $mform->setDefault('use_tii_submission', $CFG->assignment_turnitin_default_use);
-                
+
                 $tiioptions = array();
                 $tiioptions[0] = get_string("never");
                 $tiioptions[1] = get_string("always");
                 $tiioptions[2] = get_string("showwhenclosed", "turnitin");
-                
+
                 $mform->addElement('select', 'tii_show_student_score', get_string("showstudentsscore", "turnitin"), $tiioptions);
                 $mform->setDefault('tii_show_student_score', $CFG->assignment_turnitin_default_showscore);
 
@@ -1165,7 +1165,7 @@ class assignment_upload extends assignment_base {
             }
         }
     }
-    
+
 
 }
 

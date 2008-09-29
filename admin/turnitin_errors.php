@@ -25,7 +25,7 @@
             notify("File reset");
         }
     } elseif ($resetuser==2) {
-        $sql = "tiicode <>'success' AND tiicode<>'pending'";
+        $sql = "tiicode <>'success' AND tiicode<>'pending' AND tiicode<>'51'";
         $tiifiles = get_records_select('tii_files', $sql);
         foreach($tiifiles as $tiifile) {
             $tiifile->tiicode = 'pending';
@@ -72,7 +72,7 @@
 
         $table->setup();
 
-        $sql = "tiicode <>'success' AND tiicode<>'pending'";
+        $sql = "tiicode <>'success' AND tiicode<>'pending' AND tiicode<>'51'";
         $tiifiles = get_records_select('tii_files', $sql);
 
         $table->pagesize(50, count($tiifiles));
