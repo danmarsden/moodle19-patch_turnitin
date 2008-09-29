@@ -1,19 +1,19 @@
 <?php
  //allows the admin to configure turnitin stuff
- 
+
     require_once(dirname(dirname(__FILE__)) . '/config.php');
     require_once($CFG->libdir.'/adminlib.php');
     require_once($CFG->libdir.'/turnitinlib.php');
-    
+
     require_login();
     admin_externalpage_setup('turnitin_errors');
-    
+
     $context = get_context_instance(CONTEXT_SYSTEM);
 
     $fileid = optional_param('fileid',0,PARAM_INT);
     $resetuser = optional_param('reset',0,PARAM_INT);
-    
-    admin_externalpage_print_header();   
+
+    admin_externalpage_print_header();
     print_heading(get_string('turnitinerrors', 'turnitin'));
 
     print_box(get_string('tiiexplainerrors', 'turnitin'));
@@ -31,10 +31,10 @@
             $tiifile->tiicode = 'pending';
             if (update_record('tii_files', $tiifile)) {
                 notify("File reset");
-            }        
+            }
         }
     }
-    
+
         $tablecolumns = array('name', 'course', 'file', 'status');
         $tableheaders = array(get_string('name'),
                               get_string('course'),
@@ -69,27 +69,29 @@
         $table->no_sorting('course');
         $table->no_sorting('file');
         $table->no_sorting('status');
-    
+
         $table->setup();
-        
-        $table->pagesize($perpage, count($users));
+
         $sql = "tiicode <>'success' AND tiicode<>'pending'";
         $tiifiles = get_records_select('tii_files', $sql);
-        foreach($tiifiles as $tiifile) {
-            //should tidy these up - shouldn't need to call so often
-            $reset = $tiifile->tiicode.'&nbsp;<a href="turnitin_errors.php?reset=1&fileid='.$tiifile->id.'">reset</a>';
-            $user = get_record('user', 'id', $tiifile->userid);
-            $course = get_record('course', 'id', $tiifile->course);
-            $row = array(fullname($user), $course->shortname, $tiifile->filename, $reset);
-        
-            $table->add_data($row);
+
+        $table->pagesize(50, count($tiifiles));
+        if (!empty($tiifiles)) {
+            foreach($tiifiles as $tiifile) {
+                //should tidy these up - shouldn't need to call so often
+                $reset = $tiifile->tiicode.'&nbsp;<a href="turnitin_errors.php?reset=1&fileid='.$tiifile->id.'">reset</a>';
+                $user = get_record('user', 'id', $tiifile->userid);
+                $course = get_record('course', 'id', $tiifile->course);
+                $row = array(fullname($user), $course->shortname, $tiifile->filename, $reset);
+
+                $table->add_data($row);
+            }
         }
-        
-        
+
         $table->print_html();
         if (!empty($tiifiles)) {
             echo '<br/><br/><div align="center">';
-            $options["reset"] = "2";    
+            $options["reset"] = "2";
             print_single_button("turnitin_errors.php", $options, get_string("resetall", "turnitin"));
             echo '</div>';
         }
