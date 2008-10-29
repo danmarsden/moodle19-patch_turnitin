@@ -1,11 +1,11 @@
 <?php
 function xmldb_local_upgrade($oldversion) {
 
-    global $CFG, $THEME, $db;    
+    global $CFG, $THEME, $db;
 
-        $result = true;
+    $result = true;
 
-     if ($result && $oldversion < 2008250500) { /// TII API UPGRADE
+    if ($result && $oldversion < 2008052500) { /// TII API UPGRADE
         //new TII table
         $table = new XMLDBTable('tii_files');
         //fields
