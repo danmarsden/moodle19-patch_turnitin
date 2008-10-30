@@ -298,109 +298,112 @@ function tii_send_files() {
                $course = get_record('course', 'id', $file->course);
                $moduletype = get_field('modules','name', 'id', $file->module);
                $module = get_record($moduletype, 'id', $file->instance);
-
-               if (!(isset($processedmodules[$moduletype][$module->id]) && $processedmodules[$moduletype][$module->id])) {
-                   //first set up this assignment/assign the global teacher to this course.
-                    $tii = array();
-                    //set globals.
-                    $tii['username'] = $tiisettings['turnitin_userid'];
-                    $tii['uem']      = $tiisettings['turnitin_email'];
-                    $tii['ufn']      = $tiisettings['turnitin_firstname'];
-                    $tii['uln']      = $tiisettings['turnitin_lastname'];
-                    $tii['uid']      = $tiisettings['turnitin_userid'];
-                    $tii['utp']      = '2'; //2 = this user is an instructor
-                    $tii['cid']      = $tiisettings['turnitin_courseprefix'].$course->id.$course->shortname; //course ID
-                    $tii['ctl']      = $tiisettings['turnitin_courseprefix'].$course->id.$course->shortname; //Course title.  -this uses Course->id and shortname to ensure uniqueness.
-                    //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
-
-                    $tii['fcmd'] = '2'; //when set to 2 the TII API should return XML
-                    $tii['fid'] = '2'; // create class under the given account and assign above user as instructor (fid=2)
-                    //$tii['diagnostic'] = '1';
-                    $rcode = tii_post_to_api($tii, 21, 'GET','',false);
-                    if ($rcode=='21' or $rcode=='20' or $rcode=='22') { //these rcodes signify that this assignment exists, or has been successfully updated.
-                        //now create Assignment in Class
-                        $tii['assignid'] = $tiisettings['turnitin_courseprefix']. '_'.$module->name.'_'.$module->id; //assignment ID - uses $returnid to ensure uniqueness
-                        $tii['assign']   = $tiisettings['turnitin_courseprefix']. '_'.$module->name.'_'.$module->id; //assignment name stored in TII
-                        $tii['fid']      = '4';
-                        $tii['ptl']      = $course->id.$course->shortname; //paper title? - assname?
-                        $tii['ptype']    = '2'; //filetype
-                        $tii['pfn']      = $tii['ufn'];
-                        $tii['pln']      = $tii['uln'];
-                        $tii['dtstart']  = gmdate('Ymd', time()-86400); //need to fix this to use the assignment date.
-                        if (!empty($module->timedue) && !empty($module->preventlate)) {
-                            $tii['dtdue']    = gmdate('Ymd', $module->timedue+(24 * 60 * 60)); //set to 1 day in future from date due.
-                        } else {
-                            $tii['dtdue']    = gmdate('Ymd', time()+ (30 * 24 * 60 * 60)); //set to 30 days in future if not set by the module.
-                        }
-                        $tii['s_view_report'] = '1'; //allow students to view the full report.
-                        //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
-                        $rcode = tii_post_to_api($tii, 41, 'POST','',false, true);
-                        if ($rcode=='41' or $rcode=='42' or $rcode=='419') { //if assignment created/modified or already exists.
-                            $processedmodules[$moduletype][$module->id] = true; //Only do the last 2 calls once per cron.
-                            mtrace("Success getting user, Class and assignment");
-                        } else {
-                            mtrace("Error: could not create assignment in class TIICODE:".$rcode);
-                        }
-                    } else {
-                        mtrace("Error: could not create class and assign global instructor TIICODE:".$rcode);
-                    }
-               }
-               //now send the files.
-               //if this module and assignment have been created successfully, send the files to Turnitin!
-               if (!(isset($processedmodules[$moduletype][$module->id]) && $processedmodules[$moduletype][$module->id])) {
-                   mtrace("could not send a file, as class and assignment could not be created");
+               if (!empty($module->timedue) && !empty($module->preventlate) && ($module->timedue+(24 * 50 * 60) < time())) {
+                   mtrace("a file from course $course->shortname assignment $module->name cannot be submitted as the timedue has passed and preventlate is set");
                } else {
-                   $tii2 = array();
-                   $tii2['username'] = $user->username;
-                   $tii2['uem']      = $user->email;
-                   $tii2['ufn']      = $user->firstname;
-                   $tii2['uln']      = $user->lastname;
-                   $tii2['uid']      = $user->username;
-                   $tii2['utp']      = '1'; // 1= this is a student.
-                   $tii2['cid']      = $tiisettings['turnitin_courseprefix'].$course->id.$course->shortname;
-                   $tii2['ctl']      = $tiisettings['turnitin_courseprefix'].$course->id.$course->shortname;
-                   $tii2['fcmd']     = '2'; //when set to 2 the tii api call returns XML
-                   //$tii2['diagnostic'] = '1';
-                   $tii2['fid']      = '1'; //set command. - create user and login student to Turnitin (fid=1)
-                   if (tii_post_to_api($tii2, 11, 'GET', $file)) {
-                       //now enrol user in class under the given account (fid=3)
-                       $tii2['assignid'] = $tiisettings['turnitin_courseprefix']. '_'.$module->name.'_'.$module->id;
-                       $tii2['assign']   = $tiisettings['turnitin_courseprefix']. '_'.$module->name.'_'.$module->id;
-                       $tii2['fid']      = '3';
+                   if (!(isset($processedmodules[$moduletype][$module->id]) && $processedmodules[$moduletype][$module->id])) {
+                       //first set up this assignment/assign the global teacher to this course.
+                        $tii = array();
+                        //set globals.
+                        $tii['username'] = $tiisettings['turnitin_userid'];
+                        $tii['uem']      = $tiisettings['turnitin_email'];
+                        $tii['ufn']      = $tiisettings['turnitin_firstname'];
+                        $tii['uln']      = $tiisettings['turnitin_lastname'];
+                        $tii['uid']      = $tiisettings['turnitin_userid'];
+                        $tii['utp']      = '2'; //2 = this user is an instructor
+                        $tii['cid']      = $tiisettings['turnitin_courseprefix'].$course->id.$course->shortname; //course ID
+                        $tii['ctl']      = $tiisettings['turnitin_courseprefix'].$course->id.$course->shortname; //Course title.  -this uses Course->id and shortname to ensure uniqueness.
+                        //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
+
+                        $tii['fcmd'] = '2'; //when set to 2 the TII API should return XML
+                        $tii['fid'] = '2'; // create class under the given account and assign above user as instructor (fid=2)
+                        //$tii['diagnostic'] = '1';
+                        $rcode = tii_post_to_api($tii, 21, 'GET','',false);
+                        if ($rcode=='21' or $rcode=='20' or $rcode=='22') { //these rcodes signify that this assignment exists, or has been successfully updated.
+                            //now create Assignment in Class
+                            $tii['assignid'] = $tiisettings['turnitin_courseprefix']. '_'.$module->name.'_'.$module->id; //assignment ID - uses $returnid to ensure uniqueness
+                            $tii['assign']   = $tiisettings['turnitin_courseprefix']. '_'.$module->name.'_'.$module->id; //assignment name stored in TII
+                            $tii['fid']      = '4';
+                            $tii['ptl']      = $course->id.$course->shortname; //paper title? - assname?
+                            $tii['ptype']    = '2'; //filetype
+                            $tii['pfn']      = $tii['ufn'];
+                            $tii['pln']      = $tii['uln'];
+                            $tii['dtstart']  = gmdate('Ymd', time()-86400); //need to fix this to use the assignment date.
+                            if (!empty($module->timedue) && !empty($module->preventlate)) {
+                                $tii['dtdue']    = gmdate('Ymd', $module->timedue+(24 * 60 * 60)); //set to 1 day in future from date due.
+                            } else {
+                                $tii['dtdue']    = gmdate('Ymd', time()+ (30 * 24 * 60 * 60)); //set to 30 days in future if not set by the module.
+                            }
+                            $tii['s_view_report'] = '1'; //allow students to view the full report.
+                            //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
+                            $rcode = tii_post_to_api($tii, 41, 'POST','',false, true);
+                            if ($rcode=='41' or $rcode=='42' or $rcode=='419') { //if assignment created/modified or already exists.
+                                $processedmodules[$moduletype][$module->id] = true; //Only do the last 2 calls once per cron.
+                                mtrace("Success getting user, Class and assignment");
+                            } else {
+                                mtrace("Error: could not create assignment in class TIICODE:".$rcode);
+                            }
+                        } else {
+                            mtrace("Error: could not create class and assign global instructor TIICODE:".$rcode);
+                        }
+                   }
+                   //now send the files.
+                   //if this module and assignment have been created successfully, send the files to Turnitin!
+                   if (!(isset($processedmodules[$moduletype][$module->id]) && $processedmodules[$moduletype][$module->id])) {
+                       mtrace("could not send a file, as class and assignment could not be created");
+                   } else {
+                       $tii2 = array();
+                       $tii2['username'] = $user->username;
+                       $tii2['uem']      = $user->email;
+                       $tii2['ufn']      = $user->firstname;
+                       $tii2['uln']      = $user->lastname;
+                       $tii2['uid']      = $user->username;
+                       $tii2['utp']      = '1'; // 1= this is a student.
+                       $tii2['cid']      = $tiisettings['turnitin_courseprefix'].$course->id.$course->shortname;
+                       $tii2['ctl']      = $tiisettings['turnitin_courseprefix'].$course->id.$course->shortname;
+                       $tii2['fcmd']     = '2'; //when set to 2 the tii api call returns XML
                        //$tii2['diagnostic'] = '1';
-                       if (tii_post_to_api($tii2, 31, 'GET', $file)) {
-                           //now get details on the uploaded file!!
-                           $modname = $moduletype;
-                           $modfile = "$CFG->dirroot/mod/$modname/lib.php";
-                           $modfunc = $modname."_get_tii_file_info";
-                           if (file_exists($modfile)) {
-                               include_once($modfile);
-                               if (function_exists($modfunc)) {
-                                   $file->fileinfo = $modfunc($file);
+                       $tii2['fid']      = '1'; //set command. - create user and login student to Turnitin (fid=1)
+                       if (tii_post_to_api($tii2, 11, 'GET', $file)) {
+                           //now enrol user in class under the given account (fid=3)
+                           $tii2['assignid'] = $tiisettings['turnitin_courseprefix']. '_'.$module->name.'_'.$module->id;
+                           $tii2['assign']   = $tiisettings['turnitin_courseprefix']. '_'.$module->name.'_'.$module->id;
+                           $tii2['fid']      = '3';
+                           //$tii2['diagnostic'] = '1';
+                           if (tii_post_to_api($tii2, 31, 'GET', $file)) {
+                               //now get details on the uploaded file!!
+                               $modname = $moduletype;
+                               $modfile = "$CFG->dirroot/mod/$modname/lib.php";
+                               $modfunc = $modname."_get_tii_file_info";
+                               if (file_exists($modfile)) {
+                                   include_once($modfile);
+                                   if (function_exists($modfunc)) {
+                                       $file->fileinfo = $modfunc($file);
+                                   }
                                }
-                           }
-                           if (empty($file->fileinfo)) {
-                               debugging("no filepath found for this file!");
-                               exit;
-                           }
+                               if (empty($file->fileinfo)) {
+                                   debugging("no filepath found for this file!");
+                                   exit;
+                               }
 
-                           if (!file_exists($file->fileinfo->filepath.$file->filename)) {
-                               debugging("file not found in path:".$file->fileinfo->filepath.$file->filename);
-                               exit;
-                           }
-                           //TODO TII expects more than 100 characters in a submitted file - should probably check this?
+                               if (!file_exists($file->fileinfo->filepath.$file->filename)) {
+                                   debugging("file not found in path:".$file->fileinfo->filepath.$file->filename);
+                                   exit;
+                               }
+                               //TODO TII expects more than 100 characters in a submitted file - should probably check this?
 
-                           //now submit this uploaded file to Tii! (fid=5)
-                           $tii2['utp']     = '1'; //2 = instructor, 1= student.
-                           $tii2['fid']     = '5';
-                           $tii2['ptl']     = $file->filename; //paper title
-                           $tii2['ptype']   = '2'; //filetype
-                           $tii2['pfn']     = $tii['ufn'];
-                           $tii2['pln']     = $tii['uln'];
-                           //$tii['diagnostic'] = '1';
-                           $count++;
-                           if (tii_post_to_api($tii2, 51, 'POST', $file)) {
-                               debugging("success uploading assignment", DEBUG_DEVELOPER);
+                               //now submit this uploaded file to Tii! (fid=5)
+                               $tii2['utp']     = '1'; //2 = instructor, 1= student.
+                               $tii2['fid']     = '5';
+                               $tii2['ptl']     = $file->filename; //paper title
+                               $tii2['ptype']   = '2'; //filetype
+                               $tii2['pfn']     = $tii['ufn'];
+                               $tii2['pln']     = $tii['uln'];
+                               //$tii['diagnostic'] = '1';
+                               $count++;
+                               if (tii_post_to_api($tii2, 51, 'POST', $file)) {
+                                   debugging("success uploading assignment", DEBUG_DEVELOPER);
+                               }
                            }
                        }
                    }
