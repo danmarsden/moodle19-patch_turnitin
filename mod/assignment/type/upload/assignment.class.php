@@ -312,7 +312,7 @@ class assignment_upload extends assignment_base {
 
                        if (isset($assignment->use_tii_submission) && $assignment->use_tii_submission) {
 
-                           if (has_capability('moodle/turnitin:viewsimilarityscore', $this->context)) {
+                           if (has_capability('moodle/local:viewsimilarityscore', $this->context)) {
                                include_once($CFG->libdir.'/turnitinlib.php');
                                if ($tiisettings = tii_get_settings()) {
                                    $tiifile = get_record_select('tii_files', "course='".$COURSE->id.
@@ -322,7 +322,7 @@ class assignment_upload extends assignment_base {
                                                             "' AND filename='".$file.
                                                             "' AND tiicode<>'pending' AND tiicode<>'51'");
                                    if (isset($tiifile->tiiscore) && $tiifile->tiicode=='success') {
-                                        if (has_capability('moodle/turnitin:viewfullreport', $this->context)) {
+                                        if (has_capability('moodle/local:viewfullreport', $this->context)) {
                                             $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a>'.$tiifile->tiiscore.'%';
                                         } else {
                                             $output .= '&nbsp;'.get_string('similarity', 'turnitin').':'.$tiifile->tiiscore.'%';
@@ -1139,7 +1139,7 @@ class assignment_upload extends assignment_base {
         $course_context = get_context_instance(CONTEXT_COURSE, $COURSE->id);        
         $tii = get_field('config_plugins', 'value', 'name', 'turnitin_use');
         if (isset($tii) && $tii && isset($CFG->assignment_use_tii_submission) && $CFG->assignment_use_tii_submission) { //if tii enabled, allow teachers to elect to use it.
-            if (has_capability('moodle/turnitin:enableturnitin', $course_context)) {
+            if (has_capability('moodle/local:enableturnitin', $course_context)) {
                 $mform->addElement('select', 'use_tii_submission', get_string("usetii", "turnitin"), $ynoptions);
                 $mform->setDefault('use_tii_submission', $CFG->assignment_turnitin_default_use);
 
