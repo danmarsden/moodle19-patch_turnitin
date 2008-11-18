@@ -4,6 +4,7 @@
     require_once(dirname(dirname(__FILE__)) . '/config.php');
     require_once($CFG->libdir.'/adminlib.php');
     require_once($CFG->libdir.'/turnitinlib.php');
+    include_once($CFG->libdir.'/environmentlib.php'); //for normalize_version function
     
     require_login();
     admin_externalpage_setup('turnitin');
@@ -11,7 +12,13 @@
     $context = get_context_instance(CONTEXT_SYSTEM);
 
     require_capability('moodle/site:config', $context, $USER->id, true, "nopermissions");
-    
+    //check current PHP version - if it is earlier than PHP 5, throw an error as the integration won't work.
+    if (normalize_version(phpversion()) < 5) {
+        admin_externalpage_print_header();
+        notify("The Turnitin Integration requires PHP 5 or higher, you are running an earlier version of PHP and it will not work!");
+        admin_externalpage_print_footer();
+        die;
+    }
     require_once('turnitin_form.php');
     $tiiform = new turnitin_form(null);
 
