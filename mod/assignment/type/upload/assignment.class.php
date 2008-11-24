@@ -413,9 +413,8 @@ class assignment_upload extends assignment_base {
                                                             "' AND module='".get_field('modules', 'id','name','assignment').
                                                             "' AND instance='".$this->assignment->id.
                                                             "' AND userid='".$userid.
-                                                            "' AND filename='".$file.
-                                                            "' AND tiicode='success'");
-                                   if (isset($tiifile->tiiscore)) {
+                                                            "' AND filename='".$file."'");
+                                   if (isset($tiifile->tiiscore) && $tiifile->tiicode=='success') {
                                         if ($this->assignment->tii_show_student_report==2 or $this->assignment->tii_show_student_report==1) {
                                             $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').'</a>';
                                             if ($this->assignment->tii_show_student_score==1 or ($this->assignment->tii_show_student_score==2 && $this->assignopen)) {
@@ -424,6 +423,8 @@ class assignment_upload extends assignment_base {
                                         } else {
                                             $output .= '&nbsp;'.get_string('similarity', 'turnitin').':'.$tiifile->tiiscore.'%';
                                         }
+                                   } elseif(isset($tiifile->tiicode)) {
+                                       $output .= tii_error_text($tiifile->tiicode);
                                    }
                                }
                            }

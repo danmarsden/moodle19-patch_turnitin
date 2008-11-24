@@ -39,4 +39,16 @@ $string['tiierror'] = '<a href=\"http://docs.moodle.org/en/Turnitin_errors\">TII
 $string['turnitinerrors'] = 'Turnitin Errors';
 $string['tiiexplainerrors'] = 'This page lists any files submitted to Turnitin that are currently in an error state. An list of turnitin Error codes and their description is available here:<a href=\"http://docs.moodle.org/en/Turnitin_errors\">docs.moodle.org/en/Turnitin_errors</a>';
 $string['resetall'] = 'Reset All';
+$string['tiierror1007'] = 'Turnitin could not process this file as it is too large';
+$string['tiierror1008'] = 'An error occured when attempting to send this file to Turnitin';
+$string['tiierror1009'] = 'Turnitin could not process this file - it is an unsupported file type. Valid file types are MS Word, Acrobat PDF, Postscript, Text, HTML, WordPerfect and Rich Text Format';
+$string['tiierror1010'] = 'Turnitin could not process this file - it must contain more than 100 non-whitespace characters';
+$string['tiierror1011'] = 'Turnitin could not process this file - it is incorrectly formatted and there seems to be spaces between each letter.';
+$string['tiierror1012'] = 'Turnitin could not process this file - it\'s length exceeds the Turnitin limits';
+$string['tiierror1013'] = 'Turnitin could not process this file - it must contain more than 20 words';
+$string['tiierror1023'] = 'Turnitin could not process this pdf - make sure it is not password protected and contains selectable text rather than scanned images';
+$string['tiierror1024'] = 'Turnitin could not process this file - it does not meet the Turnitin criteria for a legitamate paper';
+$string['tiierrorpaperfail'] = 'Turnitin could not process this file.';
+$string['tiierrorpending'] ='File pending submission to Turnitin';
+$string['tiiconfigerror'] = 'A site configuration error occured when attempting to send this file to Turnitin';
 ?>
