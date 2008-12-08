@@ -298,42 +298,45 @@ class assignment_upload extends assignment_base {
                                                 'notes'.$userid, get_string('notes', 'assignment'), 500, 780, get_string('notes', 'assignment'), 'none', true, 'notesbutton'.$userid);
                 $output .= '&nbsp;';
             }
-
+            $i = 0;
             if ($files = get_directory_list($basedir, 'responses')) {
                 require_once($CFG->libdir.'/filelib.php');
                 foreach ($files as $key => $file) {
+                    if ($i<>0) {
+                        $output .='<br/>';
+                    }
+                    $i++;
                     $icon = mimeinfo('icon', $file);
                     $ffurl = get_file_url("$filearea/$file");
 
                     $output .= '<a href="'.$ffurl.'" ><img class="icon" src="'.$CFG->pixpath.'/f/'.$icon.'" alt="'.$icon.'" />'.$file.'</a>&nbsp;';
                     //now get TII stuff if enabled
-                       $moduleid = get_field('modules', 'id','name','assignment');
-                       $assignment = get_record('assignment', 'id', $submission->assignment);
+                    $moduleid = get_field('modules', 'id','name','assignment');
+                    $assignment = get_record('assignment', 'id', $submission->assignment);
 
-                       if (isset($assignment->use_tii_submission) && $assignment->use_tii_submission) {
+                    if (isset($assignment->use_tii_submission) && $assignment->use_tii_submission) {
 
-                           if (has_capability('moodle/local:viewsimilarityscore', $this->context)) {
-                               include_once($CFG->libdir.'/turnitinlib.php');
-                               if ($tiisettings = tii_get_settings()) {
-                                   $tiifile = get_record_select('tii_files', "course='".$COURSE->id.
-                                                            "' AND module='".get_field('modules', 'id','name','assignment').
-                                                            "' AND instance='".$submission->assignment.
-                                                            "' AND userid='".$userid.
-                                                            "' AND filename='".$file.
-                                                            "' AND tiicode<>'pending' AND tiicode<>'51'");
-                                   if (isset($tiifile->tiiscore) && $tiifile->tiicode=='success') {
-                                        if (has_capability('moodle/local:viewfullreport', $this->context)) {
-                                            $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a>'.$tiifile->tiiscore.'%';
-                                        } else {
-                                            $output .= '&nbsp;'.get_string('similarity', 'turnitin').':'.$tiifile->tiiscore.'%';
-                                        }
-                                   } elseif(isset($tiifile->tiicode)) {
-                                       $output .='&nbsp;'.get_string('tiierror', 'turnitin',$tiifile->tiicode);
-                                   }
-                               }
-                           }
-                       }
-
+                        if (has_capability('moodle/local:viewsimilarityscore', $this->context)) {
+                            include_once($CFG->libdir.'/turnitinlib.php');
+                            if ($tiisettings = tii_get_settings()) {
+                                $tiifile = get_record_select('tii_files', "course='".$COURSE->id.
+                                                         "' AND module='".get_field('modules', 'id','name','assignment').
+                                                         "' AND instance='".$submission->assignment.
+                                                         "' AND userid='".$userid.
+                                                         "' AND filename='".$file.
+                                                         "' AND tiicode<>'pending' AND tiicode<>'51'");
+                                if (isset($tiifile->tiiscore) && $tiifile->tiicode=='success') {
+                                     if (has_capability('moodle/local:viewfullreport', $this->context)) {
+                                         $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a>'.$tiifile->tiiscore.'%';
+                                     } else {
+                                         $output .= '&nbsp;'.get_string('similarity', 'turnitin').':'.$tiifile->tiiscore.'%';
+                                     }
+                                } elseif(isset($tiifile->tiicode)) {
+                                    $output .='<span class="error">&nbsp;'.get_string('tiierror', 'turnitin',$tiifile->tiicode).'&nbsp;</span>';
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
