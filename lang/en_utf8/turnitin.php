@@ -46,6 +46,7 @@ $string['tiierror1010'] = 'Turnitin could not process this file - it must contai
 $string['tiierror1011'] = 'Turnitin could not process this file - it is incorrectly formatted and there seems to be spaces between each letter.';
 $string['tiierror1012'] = 'Turnitin could not process this file - it\'s length exceeds the Turnitin limits';
 $string['tiierror1013'] = 'Turnitin could not process this file - it must contain more than 20 words';
+$string['tiierror1020'] = 'Turnitin could not process this file - it contains characters from a character set that is not supported';
 $string['tiierror1023'] = 'Turnitin could not process this pdf - make sure it is not password protected and contains selectable text rather than scanned images';
 $string['tiierror1024'] = 'Turnitin could not process this file - it does not meet the Turnitin criteria for a legitamate paper';
 $string['tiierrorpaperfail'] = 'Turnitin could not process this file.';

@@ -487,18 +487,26 @@ function tii_get_report_link($file, $userid='') {
     return tii_get_url($tii);
     }
 }
-function tii_error_text($tiicode) {
+/**
+ * given an error code, returns the description for this error
+ * @param string $tiicode The Error code.
+ * @param boolean $notify if true, returns a notify call - otherwise just returns the text of the error.
+ */
+function tii_error_text($tiicode, $notify=true) {
    $return = '';
    $tiicode = (int) $tiicode;
    if (!empty($tiicode)) {
        if ($tiicode < 100) { //don't return an error state for codes 0-99
           return '';
-       } elseif (($tiicode > 1006 && $tiicode < 1014) or ($tiicode > 1022 && $tiicode < 1025)) { //these are general errors that a could be useful to students.
-           $return = notify(get_string('tiierror'.$tiicode, 'turnitin'), 'notifyproblem', 'left', true);
+       } elseif (($tiicode > 1006 && $tiicode < 1014) or ($tiicode > 1022 && $tiicode < 1025) or $tiicode == 1020) { //these are general errors that a could be useful to students.
+           $return = get_string('tiierror'.$tiicode, 'turnitin');
        } elseif ($tiicode > 1024 && $tiicode < 2000) { //don't have documentation on the other 1000 series errors, so just display a general one.
-           $return = notify(get_string('tiierrorpaperfail', 'turnitin'), 'notifyproblem', 'left', true);
+           $return = get_string('tiierrorpaperfail', 'turnitin');
        } elseif ($tiicode < 1025 || $tiicode > 2000) { //these are not errors that a student can make any sense out of. 
-           $return = notify(get_string('tiiconfigerror', 'turnitin'), 'notifyproblem', 'left', true);
+           $return = get_string('tiiconfigerror', 'turnitin');
+       }
+       if (!empty($return) && $notify) {
+           $return = notify($return, 'notifyproblem', 'left', true);
        }
    }
     
