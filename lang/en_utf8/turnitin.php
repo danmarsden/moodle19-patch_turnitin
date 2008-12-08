@@ -35,7 +35,7 @@ $string['defaultuse'] = 'Use Default';
 $string['configdefault'] = 'This is a default setting for the assignment creation page. Only users with the capability moodle/turnitin:enableturnitin can change this setting for an individual assignment';
 $string['defaultshowscore'] ='Show Score Default';
 $string['defaultshowreport'] = 'Show Report Default';
-$string['tiierror'] = 'TII Error:<a href=\"http://docs.moodle.org/en/Turnitin_errors\" target=\"_blank\">$a</a>';
+$string['tiierror'] = 'TII Error:';
 $string['turnitinerrors'] = 'Turnitin Errors';
 $string['tiiexplainerrors'] = 'This page lists any files submitted to Turnitin that are currently in an error state. A list of turnitin Error codes and their description is available here:<a href=\"http://docs.moodle.org/en/Turnitin_errors\">docs.moodle.org/en/Turnitin_errors</a><br/>When files are reset, the cron will attempt to submit the file to turnitin again.<br/>NOTE: files with errors in the range 1000-1999 will not benefit from being reset, and will probably always fail.';
 $string['resetall'] = 'Reset All';

@@ -512,4 +512,14 @@ function tii_error_text($tiicode, $notify=true) {
     
    return $return;
 }
+function get_tii_error($tiicode) {
+    $tiierrordesc = get_string('tiierror'.$tiicode, 'turnitin');
+    if ($tiierrordesc == '[[tiierror'.$tiicode.']]') { //display link to moodledocs for this error. 
+        $lang = str_replace('_utf8', '', current_language()); //get short version of lang for docs.moodle.org
+        $errordoc = $CFG->docroot. '/' .$lang. '/Turnitin_errors';
+         return '<span class="error">&nbsp;'.get_string('tiierror', 'turnitin').'<a href="'.$errordoc.'" target="_blank">'.$tiicode.'</a>&nbsp;</span>';
+    } else {
+        return '<span class="error">&nbsp;'.$tiierrordesc.'&nbsp;</span>';
+    }
+}
 ?>

@@ -48,7 +48,7 @@ class assignment_uploadsingle extends assignment_base {
                                             $output .= '&nbsp;'.get_string('similarity', 'turnitin').':'.$tiifile->tiiscore.'%';
                                         }
                                    } elseif(isset($tiifile->tiicode)) {
-                                       $output .='&nbsp;'.get_string('tiierror', 'turnitin',$tiifile->tiicode);
+                                       $output .= get_tii_error($tiifile->tiicode);
                                    }
                                }
                            }
