@@ -327,7 +327,7 @@ class assignment_upload extends assignment_base {
                                                          "' AND tiicode<>'pending' AND tiicode<>'51'");
                                 if (isset($tiifile->tiiscore) && $tiifile->tiicode=='success') {
                                      if (has_capability('moodle/local:viewfullreport', $this->context)) {
-                                         $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a>'.$tiifile->tiiscore.'%';
+                                         $output .= '&nbsp;<a class="turnitinreport" href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a>'.$tiifile->tiiscore.'%';
                                      } else {
                                          $output .= '&nbsp;'.get_string('similarity', 'turnitin').':'.$tiifile->tiiscore.'%';
                                      }
