@@ -298,6 +298,27 @@ function tii_send_files() {
                $course = get_record('course', 'id', $file->course);
                $moduletype = get_field('modules','name', 'id', $file->module);
                $module = get_record($moduletype, 'id', $file->instance);
+
+               //now get details on the uploaded file!!
+               $modfile = "$CFG->dirroot/mod/$moduletype/lib.php";
+               $modfunc = $moduletype."_get_tii_file_info";
+               if (file_exists($modfile)) {
+                   include_once($modfile);
+                   if (function_exists($modfunc)) {
+                       $file->fileinfo = $modfunc($file);
+                   }
+               }
+               if (empty($file->fileinfo)) {
+                   debugging("no filepath found for this file! - Module:".$moduletype." Fileid:".$file->id);
+                   continue;
+               }
+               if (!file_exists($file->fileinfo->filepath.$file->filename)) {
+                   //this file has been deleted, so it should be deleted from tii_files
+                   mtrace("a file from $course->shortname, assignment: $module->name, user:$user->username doesn't exist -deleting tii_files entry(it was probably deleted by the student)");
+                   delete_records('tii_files', 'id', $file->id);
+                   continue;
+               }
+
                if (!empty($module->timedue) && !empty($module->preventlate) && ($module->timedue+(24 * 50 * 60) < time())) {
                    mtrace("a file from course $course->shortname assignment $module->name cannot be submitted as the timedue has passed and preventlate is set");
                } else {
@@ -371,25 +392,6 @@ function tii_send_files() {
                            $tii2['fid']      = '3';
                            //$tii2['diagnostic'] = '1';
                            if (tii_post_to_api($tii2, 31, 'GET', $file)) {
-                               //now get details on the uploaded file!!
-                               $modname = $moduletype;
-                               $modfile = "$CFG->dirroot/mod/$modname/lib.php";
-                               $modfunc = $modname."_get_tii_file_info";
-                               if (file_exists($modfile)) {
-                                   include_once($modfile);
-                                   if (function_exists($modfunc)) {
-                                       $file->fileinfo = $modfunc($file);
-                                   }
-                               }
-                               if (empty($file->fileinfo)) {
-                                   debugging("no filepath found for this file!");
-                                   exit;
-                               }
-
-                               if (!file_exists($file->fileinfo->filepath.$file->filename)) {
-                                   debugging("file not found in path:".$file->fileinfo->filepath.$file->filename);
-                                   exit;
-                               }
                                //TODO TII expects more than 100 characters in a submitted file - should probably check this?
 
                                //now submit this uploaded file to Tii! (fid=5)

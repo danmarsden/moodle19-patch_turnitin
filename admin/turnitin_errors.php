@@ -12,10 +12,40 @@
 
     $fileid = optional_param('fileid',0,PARAM_INT);
     $resetuser = optional_param('reset',0,PARAM_INT);
+    $page = optional_param('page', 0, PARAM_INT);
 
     admin_externalpage_print_header();
     print_heading(get_string('turnitinerrors', 'turnitin'));
+    //run check to tidy up bad 31 codes with deleted files.
+    $files = get_records('tii_files','tiicode','31');
+    if (!empty($files)) {
+        foreach($files as $file) {
+           //set globals.
+           $user = get_record('user', 'id', $file->userid);
+           $course = get_record('course', 'id', $file->course);
+           $moduletype = get_field('modules','name', 'id', $file->module);
+           $module = get_record($moduletype, 'id', $file->instance);
 
+           //now get details on the uploaded file!!
+           $modfile = "$CFG->dirroot/mod/$moduletype/lib.php";
+           $modfunc = $moduletype."_get_tii_file_info";
+           if (file_exists($modfile)) {
+               include_once($modfile);
+               if (function_exists($modfunc)) {
+                   $file->fileinfo = $modfunc($file);
+               }
+           }
+           if (empty($file->fileinfo)) {
+               debugging("no filepath found for this file! - Module:".$moduletype." Fileid:".$file->id);
+               continue;
+           }
+           if (!file_exists($file->fileinfo->filepath.$file->filename)) {
+               //this file has been deleted, so it should be deleted from tii_files
+               notify("a file from $course->shortname, assignment: $module->name, user:$user->username doesn't exist -deleting tii_files entry(it was probably deleted by the student)");
+               delete_records('tii_files', 'id', $file->id);
+           }
+        }
+    }
     print_box(get_string('tiiexplainerrors', 'turnitin'));
 
     if ($resetuser==1 && $fileid) {
@@ -74,10 +104,12 @@
 
         $sql = "tiicode <>'success' AND tiicode<>'pending' AND tiicode<>'51'";
         $tiifiles = get_records_select('tii_files', $sql);
-
-        $table->pagesize(50, count($tiifiles));
-        if (!empty($tiifiles)) {
-            foreach($tiifiles as $tiifile) {
+        $pagesize = 15;
+        $table->pagesize($pagesize, count($tiifiles));
+        $start = $page * $pagesize;
+        $pagtiifiles = array_slice($tiifiles, $start, $pagesize);
+        if (!empty($pagtiifiles)) {
+            foreach($pagtiifiles as $tiifile) {
                 //should tidy these up - shouldn't need to call so often
                 $reset = $tiifile->tiicode.'&nbsp;<a href="turnitin_errors.php?reset=1&fileid='.$tiifile->id.'">reset</a>';
                 $user = get_record('user', 'id', $tiifile->userid);
