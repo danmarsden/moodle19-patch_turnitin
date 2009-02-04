@@ -405,32 +405,32 @@ class assignment_upload extends assignment_base {
                     }
                     //now check whether TII should be shown.
                     if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission) { //if this assignment uses tii
-                    $assignopen = $this->isopen();
-                           if (isset($this->assignment->tii_show_student_report) && isset($this->assignment->tii_show_student_score) and //if report and score fields are set.
-                               ($this->assignment->tii_show_student_report== 1 or $this->assignment->tii_show_student_score ==1 or //if show always is set
-                               ($this->assignment->tii_show_student_score==2 && $this->assignopen) or //if student score to be show when assignment closed
-                               ($this->assignment->tii_show_student_report==2 && $this->assignopen))) { //if student report to be shown when assignment closed
-                               include_once($CFG->libdir.'/turnitinlib.php');
-                               if ($tiisettings = tii_get_settings()) {
-                                   $tiifile = get_record_select('tii_files', "course='".$this->assignment->course.
-                                                            "' AND module='".get_field('modules', 'id','name','assignment').
-                                                            "' AND instance='".$this->assignment->id.
-                                                            "' AND userid='".$userid.
-                                                            "' AND filename='".$file."'");
-                                   if (isset($tiifile->tiiscore) && $tiifile->tiicode=='success') {
-                                        if ($this->assignment->tii_show_student_report==2 or $this->assignment->tii_show_student_report==1) {
-                                            $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').'</a>';
-                                            if ($this->assignment->tii_show_student_score==1 or ($this->assignment->tii_show_student_score==2 && $this->assignopen)) {
-                                                $output .= ':'.$tiifile->tiiscore.'%';
-                                            }
-                                        } else {
-                                            $output .= '&nbsp;'.get_string('similarity', 'turnitin').':'.$tiifile->tiiscore.'%';
+                        include_once($CFG->libdir.'/turnitinlib.php');
+                        if ($tiisettings = tii_get_settings()) {
+                            $tiifile = get_record_select('tii_files', "course='".$this->assignment->course.
+                                                    "' AND module='".get_field('modules', 'id','name','assignment').
+                                                    "' AND instance='".$this->assignment->id.
+                                                    "' AND userid='".$userid.
+                                                    "' AND filename='".$file."'");
+                            if (isset($tiifile->tiiscore) && $tiifile->tiicode=='success') { //if TII has returned a succesful score.
+                                $assignopen = $this->isopen();
+                                if (isset($this->assignment->tii_show_student_report) && isset($this->assignment->tii_show_student_score) and //if report and score fields are set.
+                                   ($this->assignment->tii_show_student_report== 1 or $this->assignment->tii_show_student_score ==1 or //if show always is set
+                                   ($this->assignment->tii_show_student_score==2 && $this->assignopen) or //if student score to be show when assignment closed
+                                   ($this->assignment->tii_show_student_report==2 && $this->assignopen))) { //if student report to be shown when assignment closed
+                                    if ($this->assignment->tii_show_student_report==2 or $this->assignment->tii_show_student_report==1) {
+                                        $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').'</a>';
+                                        if ($this->assignment->tii_show_student_score==1 or ($this->assignment->tii_show_student_score==2 && $this->assignopen)) {
+                                             $output .= ':'.$tiifile->tiiscore.'%';
                                         }
-                                   } elseif(isset($tiifile->tiicode)) {
-                                       $output .= tii_error_text($tiifile->tiicode);
-                                   }
-                               }
-                           }
+                                    } else {
+                                        $output .= '&nbsp;'.get_string('similarity', 'turnitin').':'.$tiifile->tiiscore.'%';
+                                    }
+                                }
+                            } elseif(isset($tiifile->tiicode)) { //always display errors - even if the student isn't able to see report/score.
+                                   $output .= tii_error_text($tiifile->tiicode);
+                            }
+                        }
                     }
                     $output .= '<br />';
                 }
