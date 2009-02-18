@@ -413,14 +413,14 @@ class assignment_upload extends assignment_base {
                                                     "' AND userid='".$userid.
                                                     "' AND filename='".$file."'");
                             if (isset($tiifile->tiiscore) && $tiifile->tiicode=='success') { //if TII has returned a succesful score.
-                                $assignopen = $this->isopen();
+                                $assignclosed = ! $this->isopen();
                                 if (isset($this->assignment->tii_show_student_report) && isset($this->assignment->tii_show_student_score) and //if report and score fields are set.
                                    ($this->assignment->tii_show_student_report== 1 or $this->assignment->tii_show_student_score ==1 or //if show always is set
-                                   ($this->assignment->tii_show_student_score==2 && $this->assignopen) or //if student score to be show when assignment closed
-                                   ($this->assignment->tii_show_student_report==2 && $this->assignopen))) { //if student report to be shown when assignment closed
-                                    if ($this->assignment->tii_show_student_report==2 or $this->assignment->tii_show_student_report==1) {
+                                   ($this->assignment->tii_show_student_score==2 && $assignclosed) or //if student score to be show when assignment closed
+                                   ($this->assignment->tii_show_student_report==2 && $assignclosed))) { //if student report to be shown when assignment closed
+                                    if (($this->assignment->tii_show_student_report==2 && $assignclosed) or $this->assignment->tii_show_student_report==1) {
                                         $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').'</a>';
-                                        if ($this->assignment->tii_show_student_score==1 or ($this->assignment->tii_show_student_score==2 && $this->assignopen)) {
+                                        if ($this->assignment->tii_show_student_score==1 or ($this->assignment->tii_show_student_score==2 && $assignclosed)) {
                                              $output .= ':'.$tiifile->tiiscore.'%';
                                         }
                                     } else {
