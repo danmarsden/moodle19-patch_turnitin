@@ -536,4 +536,31 @@ function get_tii_error($tiicode) {
         return '<span class="error">&nbsp;'.$tiierrordesc.'&nbsp;</span>';
     }
 }
+function update_tii_files($filename, $courseid, $moduleid, $instanceid) {
+    global $USER;
+    //now update or insert record into tii_files
+    if ($tii_file = get_record_select('tii_files', "course='".$courseid.
+                    "' AND module='".$moduleid.
+                    "' AND instance='".$instanceid.
+                    "' AND userid = '".$USER->id.
+                    "' AND filename = '".$filename."'")) {
+        //update record.
+        $tii_file->tiicode = 'pending';
+        $tii_file->tiiscore ='0';
+        if (!update_record('tii_files', $tii_file)) {
+            debugging("update tii_files failed!");
+        }
+    } else {
+        $tii_file = new object();
+        $tii_file->course = $courseid;
+        $tii_file->module = $moduleid;
+        $tii_file->instance = $instanceid;
+        $tii_file->userid = $USER->id;
+        $tii_file->filename = $filename;
+        $tii_file->tiicode = 'pending';
+        if (!insert_record('tii_files', $tii_file)) {
+            debugging("insert into tii_files failed");
+        }
+    }    
+}
 ?>

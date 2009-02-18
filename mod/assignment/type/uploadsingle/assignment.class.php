@@ -161,9 +161,10 @@ class assignment_uploadsingle extends assignment_base {
                         $this->update_grade($submission);
                         $this->email_teachers($submission);
                         print_heading(get_string('uploadedfile'));
-
-                        $this->save_tii_file($um->get_new_filename());
-
+                        if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission) {
+                            include_once($CFG->libdir.'/turnitinlib.php');
+                            update_tii_files($um->get_new_filename(), $this->course->id, $this->cm->module, $this->assignment->id);
+                        }
                     } else {
                         notify(get_string("uploadfailnoupdate", "assignment"));
                     }
@@ -228,7 +229,8 @@ class assignment_uploadsingle extends assignment_base {
 
                 $mform->addElement('select', 'tii_show_student_report', get_string("showstudentsreport", "turnitin"), $tiioptions);
                 $mform->setDefault('tii_show_student_report', $CFG->assignment_turnitin_default_showreport);
-
+                $mform->disabledIf('tii_show_student_score', 'use_tii_submission', 'eq', 0);
+                $mform->disabledIf('tii_show_student_report', 'use_tii_submission', 'eq', 0);
             } else {
                 //add some hidden vars here.
                 $mform->addElement('hidden', 'use_tii_submission', get_string("usetii", "turnitin"));
@@ -239,36 +241,6 @@ class assignment_uploadsingle extends assignment_base {
                 $mform->setDefault('tii_show_student_report', $CFG->assignment_turnitin_default_showreport);
             }
         }
-    }
-
-    function save_tii_file($filename) {
-        global $USER;
-        if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission) {
-            //now update or insert record into tii_files
-            if ($tii_file = get_record_select('tii_files', "course='".$this->course->id.
-                            "' AND module='".$this->cm->module.
-                            "' AND instance='".$this->assignment->id.
-                            "' AND userid = '".$USER->id.
-                            "' AND filename = '".$filename."'")) {
-               //update record.
-               $tii_file->tiicode = 'pending';
-               $tii_file->tiiscore ='0';
-               if (!update_record('tii_files', $tii_file)) {
-                    debugging("update tii_files failed!");
-               }
-            } else {
-                $tii_file = new object();
-                $tii_file->course = $this->course->id;
-                $tii_file->module = $this->cm->module;
-                $tii_file->instance = $this->assignment->id;
-                $tii_file->userid = $USER->id;
-                $tii_file->filename = $filename;
-                $tii_file->tiicode = 'pending';
-                if (!insert_record('tii_files', $tii_file)) {
-                    debugging("insert into tii_files failed");
-                }
-           }
-       }
     }
 }
 

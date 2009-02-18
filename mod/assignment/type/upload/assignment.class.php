@@ -662,32 +662,9 @@ class assignment_upload extends assignment_base {
                 if (!$this->drafts_tracked()) {
                     $this->email_teachers($submission);
                 }
-                
-                if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission) {
-                    //now update or insert record into tii_files
-                    if ($tii_file = get_record_select('tii_files', "course='".$this->course->id.
-                                    "' AND module='".$this->cm->module.
-                                    "' AND instance='".$this->assignment->id.
-                                    "' AND userid = '".$USER->id.
-                                    "' AND filename = '".$um->get_new_filename()."'")) {
-                        //update record.
-                        $tii_file->tiicode = 'pending';
-                        $tii_file->tiiscore ='0';
-                        if (!update_record('tii_files', $tii_file)) {
-                            debugging("update tii_files failed!");
-                        }
-                    } else {
-                        $tii_file = new object();
-                        $tii_file->course = $this->course->id;
-                        $tii_file->module = $this->cm->module;
-                        $tii_file->instance = $this->assignment->id;
-                        $tii_file->userid = $USER->id;
-                        $tii_file->filename = $um->get_new_filename();
-                        $tii_file->tiicode = 'pending';
-                        if (!insert_record('tii_files', $tii_file)) {
-                            debugging("insert into tii_files failed");
-                        }
-                    }
+                if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission && empty($this->assignment->tii_draft_submit)) {
+                    include_once($CFG->libdir.'/turnitinlib.php');
+                    update_tii_files($um->get_new_filename(), $this->course->id, $this->cm->module, $this->assignment->id);
                 }
             } else {
                 $new_filename = $um->get_new_filename();
@@ -709,7 +686,7 @@ class assignment_upload extends assignment_base {
     }
 
     function finalize() {
-        global $USER;
+        global $USER, $COURSE;
 
         $confirm    = optional_param('confirm', 0, PARAM_BOOL);
         $returnurl  = 'view.php?id='.$this->cm->id;
@@ -747,6 +724,27 @@ class assignment_upload extends assignment_base {
             $this->view_footer();
             die;
         }
+
+        // call to update TII (if enabled in configuration)
+        if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission && // is TII enabled for this assignment?
+            (!drafts_tracked() or (isset($this->assignment->tii_draft_submit) && $this->assignment->tii_draft_submit == 1))) { // is TII to be sent on final submission?
+            // we need to get a list of files attached to this assignment and put them in an array, so that
+            // we can submit each of them to TII for processing.
+
+            // so, get a list of files
+            $filearea = $this->file_area_name($USER->id);
+
+            // let's see what's in here...
+            if ($basedir = $this->file_area($USER->id)) {
+                $files = get_directory_list($basedir);
+                debugging(var_dump($files),DEBUG_DEVELOPER);
+            }
+            if ($files) {
+                foreach ($files as $file) {
+                    update_tii_files($file, $COURSE->id, $this->cm->module, $this->assignment->id);
+                }
+            }
+        }  // end tii enabled check
         redirect($returnurl);
     }
 
@@ -1158,6 +1156,15 @@ class assignment_upload extends assignment_base {
                 $mform->addElement('select', 'tii_show_student_report', get_string("showstudentsreport", "turnitin"), $tiioptions);
                 $mform->setDefault('tii_show_student_report', $CFG->assignment_turnitin_default_showreport);
 
+                $tiidraftoptions[0] = get_string("submitondraft","turnitin");
+                $tiidraftoptions[1] = get_string("submitonfinal","turnitin");
+                $mform->addElement('select', 'tii_draft_submit', get_string("tiidraftsubmit", "turnitin"), $tiidraftoptions);
+                $mform->setDefault('tii_draft_submit', $CFG->assignment_turnitin_default_draft_submit);
+                $mform->disabledIf('tii_draft_submit', 'var4', 'eq', 0);
+                $mform->disabledIf('tii_draft_submit', 'use_tii_submission', 'eq', 0);
+                $mform->disabledIf('tii_show_student_score', 'use_tii_submission', 'eq', 0);
+                $mform->disabledIf('tii_show_student_report', 'use_tii_submission', 'eq', 0);
+                
             } else {
                 //add some hidden vars here.
                 $mform->addElement('hidden', 'use_tii_submission', get_string("usetii", "turnitin"));
@@ -1166,6 +1173,8 @@ class assignment_upload extends assignment_base {
                 $mform->setDefault('tii_show_student_score', $CFG->assignment_turnitin_default_showscore);
                 $mform->addElement('hidden', 'tii_show_student_report', get_string("showstudentsreport", "turnitin"));
                 $mform->setDefault('tii_show_student_report', $CFG->assignment_turnitin_default_showreport);
+                $mform->addElement('hidden', 'tii_draft_submit', get_string("tiidraftsubmit", "turnitin"));
+                $mform->setDefault('tii_draft_submit', $CFG->assignment_turnitin_default_draft_submit);
             }
         }
     }

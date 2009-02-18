@@ -32,5 +32,8 @@ if (isset($tii) && $tii) {
     $settings->add(new admin_setting_configselect('assignment_turnitin_default_showreport', get_string('defaultshowreport', 'turnitin'),
                    get_string('configdefault', 'turnitin'), 1, $tiioptions));
 
+    $tiidraftoptions[0] = get_string("submitondraft","turnitin");
+    $tiidraftoptions[1] = get_string("submitonfinal","turnitin");
+    $settings->add(new admin_setting_configselect('assignment_turnitin_default_draft_submit', get_string('tiidraftsubmit','turnitin'), get_string('configdefault','turnitin'), 0, $tiidraftoptions));
 }
 ?>

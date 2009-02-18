@@ -52,4 +52,7 @@ $string['tiierror1024'] = 'Turnitin could not process this file - it does not me
 $string['tiierrorpaperfail'] = 'Turnitin could not process this file.';
 $string['tiierrorpending'] ='File pending submission to Turnitin';
 $string['tiiconfigerror'] = 'A site configuration error occured when attempting to send this file to Turnitin';
+$string['submitondraft'] = 'Submit file to TII when first uploaded';
+$string['submitonfinal'] = 'Submit file to TII when student sends for marking';
+$string['tiidraftsubmit'] = 'When should the file be submitted to Turnitin';
 ?>
