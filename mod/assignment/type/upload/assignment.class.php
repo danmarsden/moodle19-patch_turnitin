@@ -662,7 +662,7 @@ class assignment_upload extends assignment_base {
                 if (!$this->drafts_tracked()) {
                     $this->email_teachers($submission);
                 }
-                if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission && empty($this->assignment->tii_draft_submit)) {
+                if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission && (empty($this->assignment->tii_draft_submit) or !$this->drafts_tracked())) {
                     include_once($CFG->libdir.'/turnitinlib.php');
                     update_tii_files($um->get_new_filename(), $this->course->id, $this->cm->module, $this->assignment->id);
                 }
@@ -727,7 +727,7 @@ class assignment_upload extends assignment_base {
 
         // call to update TII (if enabled in configuration)
         if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission && // is TII enabled for this assignment?
-            (!drafts_tracked() or (isset($this->assignment->tii_draft_submit) && $this->assignment->tii_draft_submit == 1))) { // is TII to be sent on final submission?
+            ($this->drafts_tracked() && isset($this->assignment->tii_draft_submit) && $this->assignment->tii_draft_submit == 1)) { // is TII to be sent on final submission?
             // we need to get a list of files attached to this assignment and put them in an array, so that
             // we can submit each of them to TII for processing.
 
