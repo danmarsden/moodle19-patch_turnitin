@@ -294,10 +294,22 @@ function tii_send_files() {
         if (!empty($files)) {
             foreach($files as $file) {
                //set globals.
-               $user = get_record('user', 'id', $file->userid);
-               $course = get_record('course', 'id', $file->course);
-               $moduletype = get_field('modules','name', 'id', $file->module);
-               $module = get_record($moduletype, 'id', $file->instance);
+               if (!$user = get_record('user', 'id', $file->userid)) {
+                   debugging("invalid userid! - userid:".$file->userid." Module:".$moduletype." Fileid:".$file->id);
+                   continue;
+               }
+               if (!$course = get_record('course', 'id', $file->course)) {
+                   debugging("invalid courseid! - courseid:".$file->course." Module:".$moduletype." Fileid:".$file->id);
+                   continue;
+               }
+               if (!$moduletype = get_field('modules','name', 'id', $file->module)) {
+                   debugging("invalid moduleid! - moduleid:".$file->module." Module:".$moduletype." Fileid:".$file->id);
+                   continue;               
+               }
+               if (!$module = get_record($moduletype, 'id', $file->instance)) {
+                   debugging("invalid instanceid! - instance:".$file->instance." Module:".$moduletype." Fileid:".$file->id);
+                   continue;
+               }
 
                //now get details on the uploaded file!!
                $modfile = "$CFG->dirroot/mod/$moduletype/lib.php";
