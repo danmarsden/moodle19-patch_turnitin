@@ -370,7 +370,11 @@ function tii_send_files() {
                             $tii['s_view_report'] = '1'; //allow students to view the full report.
                             //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
                             $rcode = tii_post_to_api($tii, 41, 'POST','',false, true);
-                            if ($rcode=='41' or $rcode=='42' or $rcode=='419') { //if assignment created/modified or already exists.
+                            if ($rcode=='419') { //if assignment already exists then update it.
+                                $tii['fcmd'] = '3'; //when set to 3 - it updates the course
+                                $rcode = tii_post_to_api($tii, 42, 'POST','',false, true);
+                            }    
+                            if ($rcode=='41' or $rcode=='42') { //if assignment created/modified or already exists.
                                 $processedmodules[$moduletype][$module->id] = true; //Only do the last 2 calls once per cron.
                                 mtrace("Success getting user, Class and assignment");
                             } else {
