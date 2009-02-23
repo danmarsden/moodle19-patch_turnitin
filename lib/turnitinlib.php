@@ -407,6 +407,7 @@ function tii_send_files() {
                            $tii2['assign']   = $tiisettings['turnitin_courseprefix']. '_'.$module->name.'_'.$module->id;
                            $tii2['fid']      = '3';
                            //$tii2['diagnostic'] = '1';
+                           sleep(2); //bug with TII API replication - sometimes doesn't replicate from their master to slave quick enough for the next call and returns a 407.
                            if (tii_post_to_api($tii2, 31, 'GET', $file)) {
                                //TODO TII expects more than 100 characters in a submitted file - should probably check this?
 
