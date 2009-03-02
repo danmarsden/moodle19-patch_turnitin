@@ -179,7 +179,10 @@ class assignment_uploadsingle extends assignment_base {
                         $this->update_grade($submission);
                         $this->email_teachers($newsubmission);
                         print_heading(get_string('uploadedfile'));
-                        $this->save_tii_file($um->get_new_filename());
+                        if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission) {
+                            include_once($CFG->libdir.'/turnitinlib.php');
+                            update_tii_files($um->get_new_filename(), $this->course->id, $this->cm->module, $this->assignment->id);
+                        }
                     } else {
                         notify(get_string("uploadnotregistered", "assignment", $newfile_name) );
                     }
