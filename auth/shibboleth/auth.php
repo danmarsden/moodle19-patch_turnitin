@@ -196,8 +196,17 @@ class auth_plugin_shibboleth extends auth_plugin_base {
               isset($this->config->logout_handler) 
               && !empty($this->config->logout_handler)
            ){
-            // Backup old redirect url
-            $temp_redirect = $redirect;
+            // Check if there is an alternative logout return url defined
+            if (
+                  isset($this->config->logout_return_url) 
+                  && !empty($this->config->logout_return_url)
+               ){
+                // Set temp_redirect to alternative return url
+                $temp_redirect = $this->config->logout_return_url;
+            } else {
+                // Backup old redirect url
+                $temp_redirect = $redirect;
+            }
             
             // Overwrite redirect in order to send user to Shibboleth logout page and let him return back
             $redirect = $this->config->logout_handler.'?return='.urlencode($temp_redirect);
@@ -266,17 +275,23 @@ class auth_plugin_shibboleth extends auth_plugin_base {
             set_config('organization_selection',    $config->organization_selection,    'auth/shibboleth');
         }
         set_config('logout_handler',    $config->logout_handler,    'auth/shibboleth');
+        set_config('logout_return_url',    $config->logout_return_url,    'auth/shibboleth');
         set_config('login_name',    $config->login_name,    'auth/shibboleth');
         set_config('convert_data',      $config->convert_data,      'auth/shibboleth');
         set_config('auth_instructions', $config->auth_instructions, 'auth/shibboleth');
         set_config('changepasswordurl', $config->changepasswordurl, 'auth/shibboleth');
         
+        // Overwrite alternative login URL if integrated WAYF is used
         if (isset($config->alt_login) && $config->alt_login == 'on'){
             set_config('alt_login',    $config->alt_login,    'auth/shibboleth');
             set_config('alternateloginurl', $CFG->wwwroot.'/auth/shibboleth/login.php');
         } else {
-            set_config('alt_login',    'off',    'auth/shibboleth');
-            set_config('alternateloginurl', '');
+            // Check if integrated WAYF was enabled and is now turned off
+            // If it was and only then, reset the Moodle alternate URL 
+            if ($this->config->alt_login == 'on'){
+                set_config('alt_login',    'off',    'auth/shibboleth');
+                set_config('alternateloginurl', '');
+            }
             $config->alt_login = 'off';
         }
         

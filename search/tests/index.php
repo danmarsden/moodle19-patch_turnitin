@@ -11,11 +11,10 @@
     @ob_end_flush();
 
     require_once('../../config.php');
-    require_once("$CFG->dirroot/search/lib.php");
+    require_once($CFG->dirroot.'/search/lib.php');
 
 /// makes inclusions of the Zend Engine more reliable
-    $separator = (array_key_exists('WINDIR', $_SERVER)) ? ';' : ':' ;
-    ini_set('include_path', $CFG->dirroot.'\search'.$separator.ini_get('include_path'));
+    ini_set('include_path', $CFG->dirroot.DIRECTORY_SEPARATOR.'search'.PATH_SEPARATOR.ini_get('include_path'));
 
     require_login();
     

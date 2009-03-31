@@ -166,6 +166,11 @@ class data_field_base {     // Base class for Database Field Types (see field/*/
             $content = '';
         }
 
+        // beware get_field returns false for new, empty records MDL-18567
+        if ($content===false) {
+            $content='';
+        }
+
         $str = '<div title="'.s($this->field->description).'">';
         $str .= '<input style="width:300px;" type="text" name="field_'.$this->field->id.'" id="field_'.$this->field->id.'" value="'.s($content).'" />';
         $str .= '</div>';
@@ -1835,7 +1840,7 @@ class PresetImporter {
         } else if (empty($newfields)) {
             error("New preset has no defined fields!");
         }
-        echo '<div class="overwritesettings"><label for="overwritesettings">'.get_string('overwritesettings', 'data').'</label>';
+        echo '<div class="overwritesettings"><label for="overwritesettings">'.get_string('overwritesettings', 'data');
         echo '<input id="overwritesettings" name="overwritesettings" type="checkbox" /></label></div>';
         echo '<input class="button" type="submit" value="'.$strcontinue.'" /></div></form></div>';
     }

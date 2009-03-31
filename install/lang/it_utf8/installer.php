@@ -16,7 +16,7 @@ $string['admindirsettingsub'] = 'Alcuni web host utilizzano la cartella /admin c
 Tutti i link che puntano ai file di amministrazione di Moodle terranno conto di questa variazione.';
 $string['bypassed'] = 'Aggirato';
 $string['cannotcreatelangdir'] = 'Non è possibile creare la cartella delle lingue.';
-$string['cannotcreatetempdir'] = 'Non è possibile creare la cartella temporanea.';
+$string['cannotcreatetempdir'] = 'Non è possibile creare la cartella temp';
 $string['cannotdownloadcomponents'] = 'Non è possibile scaricare componenti.';
 $string['cannotdownloadzipfile'] = 'Non è possibile scaricare file ZIP.';
 $string['cannotfindcomponent'] = 'Non è possibile trovare il componente.';
@@ -236,7 +236,7 @@ $string['sessionautostarterror'] = 'Dovrebbe essere impostata ad off';
 $string['sessionautostarthelp'] = '<p>Moodle richiede il supporto delle sessioni e non funziona senza.</p>
 <p>Le sessioni possono essere abilitate nel file php.ini ... cerca il parametro session.auto_start.</p>';
 $string['skipdbencodingtest'] = 'Salta il test della codifica del Database';
-$string['status'] = 'Status';
+$string['status'] = 'Stato';
 $string['thischarset'] = 'UTF-8';
 $string['thisdirection'] = 'ltr';
 $string['thislanguage'] = 'Italiano';
@@ -251,10 +251,10 @@ $string['welcomep50'] = 'L\'utilizzo delle applicazioni incluse in questo pacche
 $string['welcomep60'] = 'Le prossime pagine vi guideranno attraverso semplici passi per installare e configurare <strong>Moodle</strong> nel vostro computer. Potete utilizzare le impostazioni di default oppure modificarle per adeguarle alle vostre esigenze.';
 $string['welcomep70'] = 'Fate click sul pulsante \"Avanti\" per continuare l\'installazione di <strong>Moodle</strong>.';
 $string['wrongdestpath'] = 'Percorso della destinazione errato.';
-$string['wrongsourcebase'] = 'Indirizzo (URL) base errato.';
-$string['wrongzipfilename'] = 'Il nome del file ZIP è sbagliato.';
+$string['wrongsourcebase'] = 'Indirizzo (URL) sorgente errato.';
+$string['wrongzipfilename'] = 'Il nome del file ZIP è errato.';
 $string['wwwroot'] = 'Indirizzo web';
 $string['wwwrooterror'] = 'L\'indirizzo web sembra non essere valido - questa installazione di Moodle non sembra trovarsi dove indicato. L\'indirizzo è stato reimpostato';
 $string['xmlrpcrecommended'] = 'L\'installazione della estensione opzionale xmlrpc è utile per le funzionalità del Moodle Networking.';
-$string['ziprequired'] = 'Ora Moodle richiede l\'estensione Zip PHP. Gli esguibili info-ZIP o la libreria PclZip non è più usata.';
+$string['ziprequired'] = 'Ora Moodle richiede l\'estensione Zip PHP. Gli eseguibili info-ZIP o la libreria PclZip non è più utilizzata.';
 ?>

@@ -531,6 +531,8 @@ function writequestion( $question ) {
     // turns question into string
     // question reflects database fields for general question and specific to type
 
+    global $QTYPES; 
+
     // initial string;
     $expout = "";
 
@@ -640,19 +642,15 @@ function writequestion( $question ) {
         }
         $expout .= "}\n";
         break;
-    case DESCRIPTION:
-        $expout .= "// DESCRIPTION type is not supported\n";
-        break;
-    case MULTIANSWER:
-        $expout .= "// CLOZE type is not supported\n";
-        break;
     default:
         // check for plugins
         if ($out = $this->try_exporting_using_qtypes( $question->qtype, $question )) {
             $expout .= $out;
         }
         else {
-            notify("No handler for qtype '$question->qtype' for GIFT export" );
+            $expout .= "// $question->qtype is not supported by the GIFT format\n";
+            $menuname = $QTYPES[$question->qtype]->menu_name(); 
+            notify( get_string('nohandler','qformat_gift', $menuname ) );
         }
     }
     // add empty line to delimit questions

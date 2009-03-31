@@ -312,7 +312,6 @@ class default_questiontype {
             $question->timecreated = time();
             $question->timemodified = time();
             if (!$question->id = insert_record('question', $question)) {
-                print_object($question);
                 error('Could not insert new question!');
             }
         }
@@ -739,12 +738,15 @@ class default_questiontype {
     }
 
     // Used by the following function, so that it only returns results once per quiz page.
-    var $already_done = false;
+    private $htmlheadalreadydone = false;
     /**
      * If this question type requires extra CSS or JavaScript to function,
      * then this method will return an array of <link ...> tags that reference
      * those stylesheets. This function will also call require_js()
      * from ajaxlib.php, to get any necessary JavaScript linked in too.
+     *
+     * Remember that there may be more than one question of this type on a page.
+     * try to avoid including JS and CSS more than once.
      *
      * The two parameters match the first two parameters of print_question.
      *
@@ -756,32 +758,61 @@ class default_questiontype {
      * integer array keys, which have no significance.
      */
     function get_html_head_contributions(&$question, &$state) {
+        // We only do this once for this question type, no matter how often this
+        // method is called on one page.
+        if ($this->htmlheadalreadydone) {
+            return array();
+        }
+        $this->htmlheadalreadydone = true;
+
         // By default, we link to any of the files styles.css, styles.php,
         // script.js or script.php that exist in the plugin folder.
         // Core question types should not use this mechanism. Their styles
         // should be included in the standard theme.
+        return $this->find_standard_scripts_and_css();
+    }
 
-        // We only do this once
-        // for this question type, no matter how often this method is called.
-        if ($this->already_done) {
-            return array();
-        }
-        $this->already_done = true;
+    /**
+     * Like @see{get_html_head_contributions}, but this method is for CSS and
+     * JavaScript required on the question editing page question/question.php.
+     *
+     * @return an array of bits of HTML to add to the head of pages where
+     * this question is print_question-ed in the body. The array should use
+     * integer array keys, which have no significance.
+     */
+    function get_editing_head_contributions() {
+        // By default, we link to any of the files styles.css, styles.php,
+        // script.js or script.php that exist in the plugin folder.
+        // Core question types should not use this mechanism. Their styles
+        // should be included in the standard theme.
+        return $this->find_standard_scripts_and_css();
+    }
 
+    /**
+     * Utility method used by @see{get_html_head_contributions} and
+     * @see{get_editing_head_contributions}. This looks for any of the files
+     * styles.css, styles.php, script.js or script.php that exist in the plugin
+     * folder and ensures they get included.
+     *
+     * @return array as required by get_html_head_contributions or get_editing_head_contributions.
+     */
+    protected function find_standard_scripts_and_css() {
         $plugindir = $this->plugin_dir();
         $baseurl = $this->plugin_baseurl();
+
+        if (file_exists($plugindir . '/script.js')) {
+            require_js($baseurl . '/script.js');
+        }
+        if (file_exists($plugindir . '/script.php')) {
+            require_js($baseurl . '/script.php');
+        }
+
         $stylesheets = array();
         if (file_exists($plugindir . '/styles.css')) {
             $stylesheets[] = 'styles.css';
         }
         if (file_exists($plugindir . '/styles.php')) {
             $stylesheets[] = 'styles.php';
-        }
-        if (file_exists($plugindir . '/script.js')) {
-            require_js($baseurl . '/script.js');
-        }
-        if (file_exists($plugindir . '/script.php')) {
-            require_js($baseurl . '/script.php');
         }
         $contributions = array();
         foreach ($stylesheets as $stylesheet) {
@@ -1044,7 +1075,7 @@ class default_questiontype {
                     // print info about new penalty
                     // penalty is relevant only if the answer is not correct and further attempts are possible
                     if (($state->last_graded->raw_grade < $question->maxgrade / 1.01)
-                                and (QUESTION_EVENTCLOSEANDGRADE !== $state->event)) {
+                                and (QUESTION_EVENTCLOSEANDGRADE != $state->event)) {
 
                         if ('' !== $state->last_graded->penalty && ((float)$state->last_graded->penalty) > 0.0) {
                             // A penalty was applied so display it

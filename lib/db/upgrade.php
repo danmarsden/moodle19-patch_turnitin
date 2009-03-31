@@ -3094,6 +3094,25 @@ function xmldb_main_upgrade($oldversion=0) {
             upgrade_main_savepoint($result, 2007101532.10);
     }
 
+    if ($result && $oldversion < 2007101542) {
+        if (empty($CFG->hiddenuserfields)) {
+            set_config('hiddenuserfields','firstaccess');
+        } else {
+            if (strpos($CFG->hiddenuserfields, 'firstaccess') === false) { //firstaccess should not already be listed but just in case
+                set_config('hiddenuserfields',$CFG->hiddenuserfields.',firstaccess');
+            }
+        }
+    /// Main savepoint reached
+        upgrade_main_savepoint($result, 2007101542);
+    }
+
+    if ($result && $oldversion < 2007101545.01) {
+        require_once("$CFG->dirroot/filter/tex/lib.php");
+        filter_tex_updatedcallback(null);
+    /// Main savepoint reached
+        upgrade_main_savepoint($result, 2007101545.01);
+    }
+
     return $result;
 }
 

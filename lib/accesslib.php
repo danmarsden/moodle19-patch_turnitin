@@ -1252,9 +1252,9 @@ function get_user_access_sitewide($userid) {
             JOIN {$CFG->prefix}role_capabilities rco
               ON (rco.roleid=ra.roleid AND rco.contextid=sctx.id)
             WHERE ra.userid = $userid
-                  AND sctx.contextlevel <= ".CONTEXT_COURSE."
+              AND ctx.contextlevel <= ".CONTEXT_COURSECAT."
+              AND sctx.contextlevel <= ".CONTEXT_COURSE."
             ORDER BY sctx.depth, sctx.path, ra.roleid";
-
     $rs = get_recordset_sql($sql);
     if ($rs) {
         while ($rd = rs_fetch_next_record($rs)) {
@@ -4262,7 +4262,9 @@ function get_assignable_roles_for_switchrole($context, $field='name', $rolenamed
                                                      {$CFG->prefix}role_capabilities rc
                                                WHERE ra.userid = $USER->id AND ra.contextid IN ($contexts)
                                                  AND raa.roleid = ra.roleid AND r.id = raa.allowassign
-                                                 AND r.id = rc.roleid AND rc.capability = 'moodle/course:view' AND rc.capability != 'moodle/site:doanything'
+                                                 AND r.id = rc.roleid AND rc.capability = 'moodle/course:view' AND rc.permission = " . CAP_ALLOW . "
+                                                 AND NOT EXISTS (SELECT 1 FROM {$CFG->prefix}role_capabilities irc
+                                                        WHERE irc.roleid = r.id AND irc.capability = 'moodle/site:doanything' AND irc.permission = " . CAP_ALLOW . ")
                                           ) inline_view
                                     WHERE ro.id = inline_view.id
                                  ORDER BY ro.sortorder ASC")) {

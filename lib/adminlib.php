@@ -2661,6 +2661,7 @@ class admin_setting_sitesetselect extends admin_setting_configselect {
     }
 
     function write_setting($data) {
+        global $SITE;
         if (!in_array($data, array_keys($this->choices))) {
             return get_string('errorsetting', 'admin');
         }
@@ -2669,6 +2670,8 @@ class admin_setting_sitesetselect extends admin_setting_configselect {
         $temp                 = $this->name;
         $record->$temp        = $data;
         $record->timemodified = time();
+        // update $SITE
+        $SITE->{$this->name} = $data;
         return (update_record('course', $record) ? '' : get_string('errorsetting', 'admin'));
     }
 }
@@ -2768,10 +2771,13 @@ class admin_setting_sitesetcheckbox extends admin_setting_configcheckbox {
     }
 
     function write_setting($data) {
+        global $SITE;
         $record = new object();
         $record->id            = SITEID;
         $record->{$this->name} = ($data == '1' ? 1 : 0);
         $record->timemodified  = time();
+        // update $SITE
+        $SITE->{$this->name} = $data;
         return (update_record('course', $record) ? '' : get_string('errorsetting', 'admin'));
     }
 }
@@ -2799,6 +2805,7 @@ class admin_setting_sitesettext extends admin_setting_configtext {
     }
 
     function write_setting($data) {
+        global $SITE;
         $data = trim($data);
         $validated = $this->validate($data); 
         if ($validated !== true) {
@@ -2809,6 +2816,8 @@ class admin_setting_sitesettext extends admin_setting_configtext {
         $record->id            = SITEID;
         $record->{$this->name} = addslashes($data);
         $record->timemodified  = time();
+        // update $SITE
+        $SITE->{$this->name} = $data;
         return (update_record('course', $record) ? '' : get_string('dbupdatefailed', 'error'));
     }
 }
@@ -2827,11 +2836,13 @@ class admin_setting_special_frontpagedesc extends admin_setting {
     }
 
     function write_setting($data) {
+        global $SITE;
         $record = new object();
         $record->id            = SITEID;
         $record->{$this->name} = addslashes($data);
         $record->timemodified  = time();
-        return(update_record('course', $record) ? '' : get_string('errorsetting', 'admin'));
+        $SITE->{$this->name} = $data;
+        return (update_record('course', $record) ? '' : get_string('errorsetting', 'admin'));
     }
 
     function output_html($data, $query='') {
@@ -4791,7 +4802,7 @@ function db_replace($search, $replace) {
             foreach ($columns as $column => $data) {
                 if (in_array($data->type, array('text','mediumtext','longtext','varchar'))) {  // Text stuff only
                     $db->debug = true;
-                    execute_sql("UPDATE $table SET $column = REPLACE($column, '$search', '$replace');");
+                    execute_sql("UPDATE $table SET $column = REPLACE($column, '$search', '$replace')");
                     $db->debug = false;
                 }
             }

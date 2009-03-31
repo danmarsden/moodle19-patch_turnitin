@@ -41,10 +41,10 @@ $string['customcheck'] = 'Diğer Kontroller';
 $string['database'] = 'Veritabanı';
 $string['databasecreationsettingshead'] = 'Şimdi, Moodle verilerinin saklanacağı veritabanını
 oluşturmanız gerekiyor. Bu veritabanı kurulum programı tarafından aşağıdaki ayarlara göre otomatik olarak oluşturulacak.';
-$string['databasecreationsettingssub'] = '<b>Tipi:</b> kurulum tarafından mysql olarak sabitlendi<br />
-<b>Sunucu:</b> kurulum tarafından localhost olarak sabitlendi<br />
+$string['databasecreationsettingssub'] = '<b>Tipi:</b> kurulum tarafından \"mysql \"olarak sabitlendi<br />
+<b>Sunucu:</b> kurulum tarafından \"localhost\" olarak sabitlendi<br />
 <b>Adı:</b> veritabanı adı, ör: moodle<br />
-<b>Kullanıcı:</b> kurulum tarafından root olarak sabitlendi<br />
+<b>Kullanıcı:</b> kurulum tarafından \"root\" olarak sabitlendi<br />
 <b>Şifre:</b> kullanıcı şifresi<br />
 <b>Tablo öneki:</b> tüm tablo isimleri için isteğe bağlı önek';
 $string['databasesettingshead'] = 'Şimdi, Moodle verilerinin saklanacağı veritabanını
@@ -101,6 +101,7 @@ $string['databasesettingssub_postgres7'] = '<b>Tipi:</b> PostgreSQL<br />
 $string['databasesettingswillbecreated'] = '<b>Not:</b> Kurulum programı veritabanı yoksa otomatikmen veritabanını oluşturmayı deneyecektir.';
 $string['dataroot'] = 'Veri Dizini';
 $string['datarooterror'] = 'Belirtilen \'Veri Dizini\' bulunamadı veya oluşturulamadı. Dizin yolunu düzenleyin veya bu dizini kendiniz oluşturun.';
+$string['datarootpublicerror'] = 'Belirttiğiniz \'Veri Dizini\' web üzerinden doğrudan erişilebilir, farklı dizin kullanmalısınız.';
 $string['dbconnectionerror'] = 'Belirtiğiniz veritabanına bağlantı kuramadık. Lütfen veritabanı ayarlarını kontrol edin.';
 $string['dbcreationerror'] = 'Veritabanı oluşturma hatası. Belirtilen ayarlardan sağlanan isimle bir veritabanı oluşturulamadı.';
 $string['dbhost'] = 'Veritabanı Sunucusu';

@@ -2298,6 +2298,11 @@ function over_bounce_threshold($user) {
     if (empty($CFG->handlebounces)) {
         return false;
     }
+
+    if (empty($user->id)) { /// No real (DB) user, nothing to do here.
+        return false;
+    }
+
     // set sensible defaults
     if (empty($CFG->minbounces)) {
         $CFG->minbounces = 10;
@@ -2321,6 +2326,11 @@ function over_bounce_threshold($user) {
  * @param $reset - will reset the count to 0
  */
 function set_send_count($user,$reset=false) {
+
+    if (empty($user->id)) { /// No real (DB) user, nothing to do here.
+        return;
+    }
+
     if ($pref = get_record('user_preferences','userid',$user->id,'name','email_send_count')) {
         $pref->value = (!empty($reset)) ? 0 : $pref->value+1;
         update_record('user_preferences',$pref);
@@ -3131,6 +3141,10 @@ function authenticate_user_login($username, $password) {
                 set_field('user', 'auth', $auth, 'username', $username);
                 $user->auth = $auth;
             }
+            if (empty($user->firstaccess)) { //prevent firstaccess from remaining 0 for manual account that never required confirmation
+                set_field('user','firstaccess', $user->timemodified, 'id', $user->id);
+                $user->firstaccess = $user->timemodified;
+            }
 
             update_internal_user_password($user, $password); // just in case salt or encoding were changed (magic quotes too one day)
 
@@ -3632,7 +3646,7 @@ function remove_course_contents($courseid, $showfeedback=true) {
     }
 
 /// Give local code a chance to delete its references to this course.
-    require_once('locallib.php');
+    require_once($CFG->libdir.'/locallib.php');
     notify_local_delete_course($courseid, $showfeedback);
 
 /// Delete course blocks
@@ -4113,7 +4127,7 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml='', $a
     global $CFG, $FULLME, $MNETIDPJUMPURL;
     static $mnetjumps = array();
 
-    if (empty($user)) {
+    if (empty($user) || empty($user->email)) {
         return false;
     }
 
@@ -4263,11 +4277,11 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml='', $a
         /// And convert some strings
             $mail->FromName = $textlib->convert($mail->FromName, 'utf-8', $mail->CharSet); //From Name
             foreach ($mail->ReplyTo as $key => $rt) {                                      //ReplyTo Names
-                $mail->ReplyTo[$key][1] = $textlib->convert($rt, 'utf-8', $mail->CharSet);
+                $mail->ReplyTo[$key][1] = $textlib->convert($rt[1], 'utf-8', $mail->CharSet);
             }
             $mail->Subject = $textlib->convert($mail->Subject, 'utf-8', $mail->CharSet);   //Subject
             foreach ($mail->to as $key => $to) {
-                $mail->to[$key][1] = $textlib->convert($to, 'utf-8', $mail->CharSet);      //To Names
+                $mail->to[$key][1] = $textlib->convert($to[1], 'utf-8', $mail->CharSet);      //To Names
             }
             $mail->Body = $textlib->convert($mail->Body, 'utf-8', $mail->CharSet);         //Body
             $mail->AltBody = $textlib->convert($mail->AltBody, 'utf-8', $mail->CharSet);   //Subject
@@ -5349,7 +5363,6 @@ function get_string($identifier, $module='', $a=NULL, $extralocations=NULL) {
     } else {
         $locations[] = $CFG->dataroot.'/lang/';
         $locations[] = $CFG->dirroot.'/lang/';
-        $locations[] = $CFG->dirroot.'/local/lang/';
     }
 
 /// Add extra places to look for strings for particular plugin types.
@@ -5366,7 +5379,9 @@ function get_string($identifier, $module='', $a=NULL, $extralocations=NULL) {
             $type = substr($module, 0, $dividerpos + 1);
             $plugin = substr($module, $dividerpos + 1);
         }
-        if (!empty($rules[$type])) {
+        if ($module == 'local') {
+            $locations[] = $CFG->dirroot . '/local/lang/';
+        } if (!empty($rules[$type])) {
             foreach ($rules[$type] as $location) {
                 $locations[] = $CFG->dirroot . "/$location/$plugin/lang/";
             }

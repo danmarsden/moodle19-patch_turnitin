@@ -570,7 +570,7 @@ class resource_file extends resource_base {
                      '<script type="text/javascript">'."\n".
                      '//<![CDATA['."\n".
                        'var FO = { movie:"'.$CFG->wwwroot.'/filter/mediaplugin/flvplayer.swf?file='.$cleanurl.'",'."\n".
-                         'width:"600", height:"400", majorversion:"6", build:"40", allowscriptaccess:"never", quality: "high" };'."\n".
+                         'width:"600", height:"400", majorversion:"6", build:"40", allowscriptaccess:"never", allowfullscreen:"true", quality: "high" };'."\n".
                        'UFO.create(FO, "'.$id.'");'."\n".
                      '//]]>'."\n".
                      '</script>'."\n";
@@ -732,7 +732,7 @@ class resource_file extends resource_base {
 
         if (!empty($this->resource->reference) && file_exists($CFG->dirroot ."/mod/resource/type/file/externserverfile.php")) {
             include $CFG->dirroot ."/mod/resource/type/file/externserverfile.php";
-            if (function_exists(extern_server_file)) {
+            if (function_exists('extern_server_file')) {
                 return extern_server_file($this->resource->reference);
             }
         }

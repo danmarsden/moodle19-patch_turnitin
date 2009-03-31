@@ -1694,6 +1694,19 @@ function get_html_head_contributions(&$questionlist, &$questions, &$states) {
 }
 
 /**
+ * Like @see{get_html_head_contributions} but for the editing page
+ * question/question.php.
+ *
+ * @param $question A question object. Only $question->qtype is used.
+ * @return string some HTML code that can go inside the head tag.
+ */
+function get_editing_head_contributions($question) {
+    global $QTYPES;
+    $contributions = $QTYPES[$question->qtype]->get_editing_head_contributions();
+    return implode("\n", array_unique($contributions));
+}
+
+/**
  * Prints a question
  *
  * Simply calls the question type specific print_question() method.
@@ -1886,7 +1899,14 @@ function question_category_select_menu($contexts, $top = false, $currentcat = 0,
 * @return object The default category - the category in the course context
 */
 function question_make_default_categories($contexts) {
+    static $preferredlevels = array(
+        CONTEXT_COURSE => 4,
+        CONTEXT_MODULE => 3,
+        CONTEXT_COURSECAT => 2,
+        CONTEXT_SYSTEM => 1,
+    );
     $toreturn = null;
+    $preferredness = 0;
     // If it already exists, just return it.
     foreach ($contexts as $key => $context) {
         if (!$categoryrs = get_recordset_select("question_categories", "contextid = '{$context->id}'", 'sortorder, name', '*', '', 1)) {
@@ -1907,12 +1927,16 @@ function question_make_default_categories($contexts) {
                 }
             }
         }
-        if ($context->contextlevel == CONTEXT_COURSE){
-            $toreturn = clone($category);
+        if ($preferredlevels[$context->contextlevel] > $preferredness &&
+                has_any_capability(array('moodle/question:usemine', 'moodle/question:useall'), $context)) {
+            $toreturn = $category;
+            $preferredness = $preferredlevels[$context->contextlevel];
         }
     }
 
-
+    if (!is_null($toreturn)) {
+        $toreturn = clone($toreturn);
+    }
     return $toreturn;
 }
 
@@ -2156,7 +2180,6 @@ class context_to_string_translator{
     }
 
 }
-
 
 /**
  * Check capability on category

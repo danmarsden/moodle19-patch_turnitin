@@ -68,7 +68,7 @@
 
         if (empty($b)) {
             if (empty($a)) {
-                $navigation = build_navigation('', $cm);
+                $navigation = build_navigation($strreport, $cm);
                 print_header("$course->shortname: ".format_string($scorm->name), $course->fullname,$navigation,
                              '', '', true);
             } else {
@@ -380,7 +380,6 @@
                 $interactionid = 'cmi.interactions.'.$i.'.id';
             }
             if ($existinteraction) {
-                echo '<h3>'.get_string('interactions','scorm').'</h3>';
                 echo '<h3>'.get_string('interactions','scorm').'</h3>';
                 print_table($table);
             }
