@@ -14,13 +14,18 @@ define('FRONTPAGECOURSELIST',     '1');
 define('FRONTPAGECATEGORYNAMES',  '2');
 define('FRONTPAGETOPICONLY',      '3');
 define('FRONTPAGECATEGORYCOMBO',  '4');
-define('FRONTPAGECOURSELIMIT',    200);         // maximum number of courses displayed on the frontpage
+if (!defined('FRONTPAGECOURSELIMIT')) {
+    define('FRONTPAGECOURSELIMIT',    200);     // maximum number of courses displayed on the frontpage
+}
 define('EXCELROWS', 65535);
 define('FIRSTUSEDEXCELROW', 3);
 
 define('MOD_CLASS_ACTIVITY', 0);
 define('MOD_CLASS_RESOURCE', 1);
 
+if (!defined('MAX_MODINFO_CACHE_SIZE')) { 
+    define('MAX_MODINFO_CACHE_SIZE', 10);
+}
 
 function make_log_url($module, $url) {
     switch ($module) {
@@ -1175,6 +1180,11 @@ function &get_fast_modinfo(&$course, $userid=0) {
 
     unset($cache[$course->id]); // prevent potential reference problems when switching users
     $cache[$course->id] = $modinfo;
+
+    // Ensure cache does not use too much RAM
+    if (count($cache) > MAX_MODINFO_CACHE_SIZE) {
+        array_shift($cache);
+    }
 
     return $cache[$course->id];
 }

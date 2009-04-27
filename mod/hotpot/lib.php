@@ -1887,7 +1887,10 @@ class hotpot_xml_quiz extends hotpot_xml_tree {
             $quote = '["'."']?"; // single, double, or no quote
 
             // patterns to media files types and paths
-            $filetype = "avi|mpeg|mpg|mp3|mov|wmv|swf|flv";
+            $filetype = "avi|mpeg|mpg|mp3|mov|wmv|flv";
+            if ($CFG->filter_mediaplugin_enable_swf) {
+                $filetype .= '|swf';
+            }
             $filepath = ".*?\.($filetype)";
 
             $tagopen = '(?:(<)|(\\\\u003C))'; // left angle-bracket (uses two parenthese)
@@ -2661,4 +2664,13 @@ function hotpot_reset_course_form_definition(&$mform) {
 function hotpot_reset_course_form_defaults($course) {
     return array('reset_hotpot_deleteallattempts' => 1);
 }
+
+/**
+ * Tells if files in moddata are trusted and can be served without XSS protection.
+ * @return bool true if file can be submitted by teacher only (trusted), false otherwise
+ */
+function hotpot_is_moddata_trusted() {
+    return true;
+}
+
 ?>

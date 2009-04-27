@@ -790,7 +790,7 @@ function get_cache_flags($type, $changedsince=NULL) {
 
 /**
  * Use this funciton to get a list of users from a config setting of type admin_setting_users_with_capability.
- * @param string $value the value of the config setting. 
+ * @param string $value the value of the config setting.
  * @param string $capability the capability - must match the one passed to the admin_setting_users_with_capability constructor.
  * @return array of user objects.
  */
@@ -1986,10 +1986,15 @@ function require_login($courseorid=0, $autologinguest=true, $cm=null, $setwantsu
             print_error('nocontext');
         }
     }
+    if (!empty($cm) && !isset($cm->context)) {
+        if ( ! $cm->context = get_context_instance(CONTEXT_MODULE, $cm->id) ) {
+            print_error('nocontext');
+        }
+    }
     if ($COURSE->id == SITEID) {
         /// Eliminate hidden site activities straight away
         if (!empty($cm) && !$cm->visible
-            && !has_capability('moodle/course:viewhiddenactivities', $COURSE->context)) {
+            && !has_capability('moodle/course:viewhiddenactivities', $cm->context)) {
             redirect($CFG->wwwroot, get_string('activityiscurrentlyhidden'));
         }
         user_accesstime_log($COURSE->id); /// Access granted, update lastaccess times
@@ -2080,7 +2085,7 @@ function require_login($courseorid=0, $autologinguest=true, $cm=null, $setwantsu
 
         /// Make sure they can read this activity too, if specified
 
-            if (!empty($cm) and !$cm->visible and !has_capability('moodle/course:viewhiddenactivities', $COURSE->context)) {
+            if (!empty($cm) && !$cm->visible && !has_capability('moodle/course:viewhiddenactivities', $cm->context)) {
                 redirect($CFG->wwwroot.'/course/view.php?id='.$cm->course, get_string('activityiscurrentlyhidden'));
             }
             user_accesstime_log($COURSE->id); /// Access granted, update lastaccess times
@@ -3014,6 +3019,7 @@ function delete_user($user) {
     global $CFG;
     require_once($CFG->libdir.'/grouplib.php');
     require_once($CFG->libdir.'/gradelib.php');
+    require_once($CFG->dirroot.'/message/lib.php');
 
     begin_sql();
 
@@ -3023,6 +3029,9 @@ function delete_user($user) {
             $grade->delete('userdelete');
         }
     }
+
+    //move unread messages from this user to read
+    message_move_userfrom_unread2read($user->id);
 
     // remove from all groups
     delete_records('groups_members', 'userid', $user->id);
@@ -6319,6 +6328,39 @@ function check_php_version($version='4.1.0') {
     }
 
     return false;
+}
+
+/**
+ * Returns one or several CSS class names that match the user's browser. These can be put
+ * in the body tag of the page to apply browser-specific rules without relying on CSS hacks
+ */
+function get_browser_version_classes() {
+    $classes = '';
+    if (check_browser_version("MSIE", "0")) {
+        $classes .= 'ie ';
+        if (check_browser_version("MSIE", 8)) {
+            $classes .= 'ie8 ';
+        } elseif (check_browser_version("MSIE", 7)) {
+            $classes .= 'ie7 ';
+        } elseif (check_browser_version("MSIE", 6)) {
+            $classes .= 'ie6 ';
+        }
+    } elseif (check_browser_version("Firefox", 0) || check_browser_version("Gecko", 0) || check_browser_version("Camino", 0)) {
+        $classes .= 'gecko ';
+
+        if (preg_match('/rv\:([1-2])\.([0-9])/', $_SERVER['HTTP_USER_AGENT'], $matches)) {
+            $classes .= "gecko{$matches[1]}{$matches[2]} ";
+        }
+
+    } elseif (check_browser_version("Safari", 0)) {
+        $classes .= 'safari ';
+
+    } elseif (check_browser_version("Opera", 0)) {
+        $classes .= 'opera ';
+
+    }
+
+    return $classes;
 }
 
 /**

@@ -2209,7 +2209,6 @@ body#doc-contents ul {
   display: inline;
   padding: 5px;
 }
-
 /* outcomes edit */
 
 .grade-edit-outcome .buttons {
@@ -2226,6 +2225,11 @@ div.allcoursegrades {
     width: 100%;
     text-align: right;
     padding: 4px 0px 5px 0px;
+}
+
+.importoutcomenofile .singlebutton {
+    text-align: center;
+    margin-top: 5px;
 }
 /* gradebook edit tree */
 

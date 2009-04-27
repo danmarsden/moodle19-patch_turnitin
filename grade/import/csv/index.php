@@ -43,6 +43,9 @@ $context = get_context_instance(CONTEXT_COURSE, $id);
 require_capability('moodle/grade:import', $context);
 require_capability('gradeimport/csv:view', $context);
 
+$separatemode = (groups_get_course_groupmode($COURSE) == SEPARATEGROUPS and !has_capability('moodle/site:accessallgroups', $context));
+$currentgroup = groups_get_course_group($course);
+
 // sort out delimiter
 if (isset($CFG->CSV_DELIMITER)) {
     $csv_delimiter = '\\' . $CFG->CSV_DELIMITER;
@@ -61,12 +64,8 @@ if (isset($CFG->CSV_DELIMITER)) {
     $csv_encode = '/\&\#44/';
 }
 
-$strgrades = get_string('grades', 'grades');
 $actionstr = get_string('csv', 'grades');
-$navigation = grade_build_nav(__FILE__, $actionstr, array('courseid' => $course->id));
-
-print_header($course->shortname.': '.get_string('grades'), $course->fullname, $navigation);
-print_grade_plugin_selector($id, 'import', 'csv');
+print_grade_page_head($course->id, 'import', 'csv');
 
 // set up import form
 $mform = new grade_import_form(null, array('includeseparator'=>!isset($CFG->CSV_DELIMITER), 'verbosescales'=>true));
@@ -202,6 +201,7 @@ if ($formdata = $mform->get_data()) {
                 $maperrors[$j] = true;
             } else {
                 // collision
+                fclose($fp);
                 unlink($filename); // needs to be uploaded again, sorry
                 error('mapping collision detected, 2 fields maps to the same grade item '.$j);
             }
@@ -426,6 +426,14 @@ if ($formdata = $mform->get_data()) {
                 break;
             }
 
+            if ($separatemode and !groups_is_member($currentgroup, $studentid)) {
+                // not allowed to import into this group, abort
+                $status = false;
+                import_cleanup($importcode);
+                notify('user not member of current group, can not update!');
+                break;
+            }
+
             // insert results of this students into buffer
             if ($status and !empty($newgrades)) {
 
@@ -481,12 +489,16 @@ if ($formdata = $mform->get_data()) {
             grade_import_commit($course->id, $importcode);
         }
         // temporary file can go now
+        fclose($fp);
         unlink($filename);
     } else {
         error ('import file '.$filename.' not readable');
     }
 
 } else {
+    groups_print_course_menu($course, 'index.php?id='.$id);
+    echo '<div class="clearer"></div>';
+
     // display the standard upload file form
     $mform->display();
 }

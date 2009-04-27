@@ -399,7 +399,7 @@ function data_generate_default_template(&$data, $template, $recordid=0, $form=fa
         if ($update) {
             $newdata = new object();
             $newdata->id = $data->id;
-            $newdata->{$template} = $str;
+            $newdata->{$template} = addslashes($str);
             if (!update_record('data', $newdata)) {
                 notify('Error updating template');
             } else {
@@ -1323,7 +1323,7 @@ function data_print_comments($data, $record, $page=0, $mform=false) {
     $editor = optional_param('addcomment', 0, PARAM_BOOL);
     if (!$mform and !$editor) {
         echo '<div class="newcomment" style="text-align:center">';
-        echo '<a href="view.php?d='.$data->id.'&amp;page='.$page.'&amp;mode=single&amp;addcomment=1">'.get_string('addcomment', 'data').'</a>';
+        echo '<a href="view.php?d='.$data->id.'&amp;rid='.$record->id.'&amp;mode=single&amp;addcomment=1">'.get_string('addcomment', 'data').'</a>';
         echo '</div>';
     } else {
         if (!$mform) {
