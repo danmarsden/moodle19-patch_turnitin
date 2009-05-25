@@ -532,6 +532,7 @@ function tii_error_text($tiicode, $notify=true) {
    return $return;
 }
 function get_tii_error($tiicode) {
+    global $CFG;
     $tiierrordesc = get_string('tiierror'.$tiicode, 'turnitin');
     if ($tiierrordesc == '[[tiierror'.$tiicode.']]') { //display link to moodledocs for this error. 
         $lang = str_replace('_utf8', '', current_language()); //get short version of lang for docs.moodle.org
