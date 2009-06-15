@@ -686,7 +686,7 @@ class assignment_upload extends assignment_base {
     }
 
     function finalize() {
-        global $USER, $COURSE;
+        global $USER, $COURSE, $CFG;
 
         $confirm    = optional_param('confirm', 0, PARAM_BOOL);
         $returnurl  = 'view.php?id='.$this->cm->id;
@@ -731,13 +731,14 @@ class assignment_upload extends assignment_base {
             // we need to get a list of files attached to this assignment and put them in an array, so that
             // we can submit each of them to TII for processing.
 
+            include_once($CFG->libdir.'/turnitinlib.php');
+
             // so, get a list of files
             $filearea = $this->file_area_name($USER->id);
 
             // let's see what's in here...
             if ($basedir = $this->file_area($USER->id)) {
                 $files = get_directory_list($basedir);
-                debugging(var_dump($files),DEBUG_DEVELOPER);
             }
             if ($files) {
                 foreach ($files as $file) {
