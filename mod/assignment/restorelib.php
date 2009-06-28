@@ -112,10 +112,11 @@
                 if (restore_userdata_selected($restore,'assignment',$mod->id)) { 
                     //Restore assignmet_submissions
                     $status = assignment_submissions_restore_mods($mod->id, $newid,$info,$restore) && $status;
+
+                    //now restore Turnitin Data.
+                    $status = assignment_restore_tiifiles($newid,$info,$restore);
                 }
-                
-                //now restore Turnitin Data.
-                $status = assignment_restore_tiifiles($newid,$info,$restore);
+
             } else {
                 $status = false;
             }

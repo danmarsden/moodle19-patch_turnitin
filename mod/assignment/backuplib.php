@@ -83,10 +83,10 @@
             if ($status) {
                 $status = backup_assignment_files_instance($bf,$preferences,$assignment->id);
             }
-        }
-        //now backup Turnitin files
-        if (isset($assignment->use_tii_submission) && $assignment->use_tii_submission) {
-            $status = backup_turnitin_files($bf,$preferences,$assignment);
+            //now backup Turnitin files
+            if (isset($assignment->use_tii_submission) && $assignment->use_tii_submission) {
+                $status = backup_turnitin_files($bf,$preferences,$assignment);
+            }
         }
         //End mod
         $status =fwrite ($bf,end_tag("MOD",3,true));
