@@ -530,6 +530,9 @@
 
         $tiifiles = $info['MOD']['#']['TIIFILES']['0']['#']['TIIFILE'];
         
+        if (empty($tiifiles)) { //return true if no tiifiles to restore
+            return $status;
+        }
         //Iterate over tiifiles
         for($i = 0; $i < sizeof($tiifiles); $i++) {
             $tii_info = $tiifiles[$i];
