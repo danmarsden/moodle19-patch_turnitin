@@ -66,6 +66,21 @@
             $assignment->grade = backup_todb($info['MOD']['#']['GRADE']['0']['#']);
             $assignment->timemodified = backup_todb($info['MOD']['#']['TIMEMODIFIED']['0']['#']);
 
+            if (empty($assignment->tii_show_student_score)) {
+                if (isset($CFG->assignment_turnitin_default_showscore)) {
+                    $assignment->tii_show_student_score = $CFG->assignment_turnitin_default_showscore;
+                } else {
+                    $assignment->tii_show_student_score = 0;
+                }
+            }
+            if (empty($assignment->tii_show_student_report)) {
+                if (isset($CFG->assignment_turnitin_default_showreport)) {
+                    $assignment->tii_show_student_score = $CFG->assignment_turnitin_default_showreport;
+                } else {
+                    $assignment->tii_show_student_score = 0;
+                }
+            }
+
             //We have to recode the grade field if it is <0 (scale)
             if ($assignment->grade < 0) {
                 $scale = backup_getid($restore->backup_unique_code,"scale",abs($assignment->grade));        
