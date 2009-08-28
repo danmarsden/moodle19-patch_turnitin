@@ -425,8 +425,9 @@ function tii_send_files() {
                            $tii2['assign']   = $tiisettings['turnitin_courseprefix']. '_'.$module->name.'_'.$module->id;
                            $tii2['fid']      = '3';
                            //$tii2['diagnostic'] = '1';
-                           sleep(2); //bug with TII API replication - sometimes doesn't replicate from their master to slave quick enough for the next call and returns a 407.
-                           if (tii_post_to_api($tii2, 31, 'GET', $file)) {
+                           //bug with TII API replication - sometimes doesn't replicate from their master to slave
+                           //quick enough for the next call and returns a 407. - use tii_post_handler to manage this.
+                           if (tii_post_handler(407, $tii2, 31, 'GET', $file)) {
                                //TODO TII expects more than 100 characters in a submitted file - should probably check this?
 
                                //now submit this uploaded file to Tii! (fid=5)
@@ -586,5 +587,30 @@ function update_tii_files($filename, $courseid, $moduleid, $instanceid) {
             debugging("insert into tii_files failed");
         }
     }    
+}
+/**
+ * Turnitin use a frontend/backend configuration, an inital call to the frontend cannot always
+ * be relied on for a subsequent call to the frontend. - This function works as a handler for
+ * tii_post_to_api - it takes an initial possible Error code, and if that code is returned from
+ * the call to tii_post_to_api it will try the API call X times and wait increasing amounts of time
+ * for the API to catch up.
+ * @param string $tiierror if this error is returned, try again.
+ */
+function tii_post_handler($tiierror, $tii, $success, $action='GET', $file='', $savercode='true') {
+    $retcode = $tiierror;
+    $tries = 6;
+    $i = 0;
+    while ($tries > $i) {
+        sleep($i*2);
+        $retcode = tii_post_to_api($tii, $success, $action, $file, $savercode, true); //forces the code to be returned
+        if ($retcode == $success) {
+            return true;
+        }
+        if ($retcode <> $tiierror) { // a different error has occured - this handler only handles the error code in $tiierror
+            return false;
+        }
+        $i++;
+    }
+    return false;
 }
 ?>
