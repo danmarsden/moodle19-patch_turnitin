@@ -613,4 +613,23 @@ function tii_post_handler($tiierror, $tii, $success, $action='GET', $file='', $s
     }
     return false;
 }
+/**
+ * Function that returns the name of the css class to use for a given Tii score
+ * @param integer $score the score returned from Turnitin
+ */
+function tii_get_css_rank ($score) {
+    $rank = "none";
+    if($score >  90) { $rank = "1"; }
+    elseif($score >  80) { $rank = "2"; }
+    elseif($score >  70) { $rank = "3"; }
+    elseif($score >  60) { $rank = "4"; }
+    elseif($score >  50) { $rank = "5"; }
+    elseif($score >  40) { $rank = "6"; }
+    elseif($score >  30) { $rank = "7"; }
+    elseif($score >  20) { $rank = "8"; }
+    elseif($score >  10) { $rank = "9"; }
+    elseif($score >=  0) { $rank = "10"; }
+
+    return "rank$rank";
+}
 ?>

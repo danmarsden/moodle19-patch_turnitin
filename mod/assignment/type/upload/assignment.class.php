@@ -326,10 +326,11 @@ class assignment_upload extends assignment_base {
                                                          "' AND filename='".$file.
                                                          "' AND tiicode<>'pending' AND tiicode<>'51'");
                                 if (isset($tiifile->tiiscore) && $tiifile->tiicode=='success') {
+                                    $rank = tii_get_css_rank($tiifile->tiiscore);
                                      if (has_capability('moodle/local:viewfullreport', $this->context)) {
-                                         $output .= '&nbsp;<a class="turnitinreport" href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a>'.$tiifile->tiiscore.'%';
+                                         $output .= '<span class="turnitinreport"><a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a><span class="'.$rank.'">'.$tiifile->tiiscore.'%</span></span>';
                                      } else {
-                                         $output .= '&nbsp;'.get_string('similarity', 'turnitin').':'.$tiifile->tiiscore.'%';
+                                         $output .= '<span class="turnitinreport">'.get_string('similarity', 'turnitin').':<span class="'.$rank.'">'.$tiifile->tiiscore.'%</span></span>';
                                      }
                                 } elseif(isset($tiifile->tiicode)) {
                                     $output .= get_tii_error($tiifile->tiicode);
@@ -419,12 +420,14 @@ class assignment_upload extends assignment_base {
                                    ($this->assignment->tii_show_student_score==2 && $assignclosed) or //if student score to be show when assignment closed
                                    ($this->assignment->tii_show_student_report==2 && $assignclosed))) { //if student report to be shown when assignment closed
                                     if (($this->assignment->tii_show_student_report==2 && $assignclosed) or $this->assignment->tii_show_student_report==1) {
-                                        $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').'</a>';
+                                        $rank = tii_get_css_rank($tiifile->tiiscore);
+                                        $output .= '<span class="turnitinreport"><a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').'</a>';
                                         if ($this->assignment->tii_show_student_score==1 or ($this->assignment->tii_show_student_score==2 && $assignclosed)) {
-                                             $output .= ':'.$tiifile->tiiscore.'%';
+                                             $output .= ':<span class="'.$rank.'">'.$tiifile->tiiscore.'%</span>';
                                         }
+                                        $output .= '</span>';
                                     } else {
-                                        $output .= '&nbsp;'.get_string('similarity', 'turnitin').':'.$tiifile->tiiscore.'%';
+                                        $output .= '<span class="turnitinreport">'.get_string('similarity', 'turnitin').':<span class="'.$rank.'">'.$tiifile->tiiscore.'%</span>';
                                     }
                                 }
                             } elseif(isset($tiifile->tiicode)) { //always display errors - even if the student isn't able to see report/score.

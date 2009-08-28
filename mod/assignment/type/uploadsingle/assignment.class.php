@@ -42,10 +42,11 @@ class assignment_uploadsingle extends assignment_base {
                                                             "' AND filename='".$file.
                                                             "' AND tiicode<>'pending' AND tiicode<>'51'");
                                    if (isset($tiifile->tiiscore) && $tiifile->tiicode=='success') {
+                                        $rank = tii_get_css_rank($tiifile->tiiscore);
                                         if (has_capability('moodle/local:viewfullreport', $this->context)) {
-                                            $output .= '&nbsp;<a class="turnitinreport" href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a>'.$tiifile->tiiscore.'%';
+                                            $output .= '<span class="turnitinreport"><a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a><span class="'.$rank.'">'.$tiifile->tiiscore.'%</span></span>';
                                         } else {
-                                            $output .= '&nbsp;'.get_string('similarity', 'turnitin').':'.$tiifile->tiiscore.'%';
+                                            $output .= '<span class="turnitinreport">'.get_string('similarity', 'turnitin').':<span class="'.$rank.'">'.$tiifile->tiiscore.'%</span></span>';
                                         }
                                    } elseif(isset($tiifile->tiicode)) {
                                        $output .= get_tii_error($tiifile->tiicode);
