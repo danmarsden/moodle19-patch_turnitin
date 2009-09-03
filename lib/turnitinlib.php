@@ -38,14 +38,14 @@ function tii_get_url($tii, $returnArray=false) {
     //TODO need to check lengths of certain vars. - some cannot be under 5 or over 50.
     if (isset($tiisettings['turnitin_senduseremail']) && $tiisettings['turnitin_senduseremail']) {
         $tii['dis'] ='0'; //sets e-mail notification for users in tii system to enabled.
-        //munge e-mails if prefix is set.
-        if (isset($tiisettings['turnitin_emailprefix'])) { //if email prefix is set
-            if ($tii['uem'] <> $tiisettings['turnitin_email']) { //if email is not the global teacher.
-                $tii['uem'] = $tiisettings['turnitin_emailprefix'] . $tii['uem']; //munge e-mail to prevent user access.
-            }
-        }
     } else {
         $tii['dis'] ='1'; //sets e-mail notification for users in tii system to disabled.
+    }
+    //munge e-mails if prefix is set.
+    if (isset($tiisettings['turnitin_emailprefix'])) { //if email prefix is set
+        if ($tii['uem'] <> $tiisettings['turnitin_email']) { //if email is not the global teacher.
+            $tii['uem'] = $tiisettings['turnitin_emailprefix'] . $tii['uem']; //munge e-mail to prevent user access.
+        }
     }
     //set vars if not set.
     if (!isset($tii['encrypt'])) {
