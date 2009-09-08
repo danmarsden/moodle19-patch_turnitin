@@ -478,13 +478,19 @@ function tii_get_scores() {
                $tii['fid']      = '6';
                $tii['oid']      = $file->tii;
 
-               $tiiscore = tii_post_to_api($tii, 61, 'GET', $file, false);
-               if (isset($tiiscore) && $tiiscore) {
+               $tiiscore = tii_post_to_api($tii, 61, 'GET', $file, false, true);
+               if (isset($tiiscore) && $tiiscore=='61') {
                    $file->tiiscore = $tiiscore;
                    $file->tiicode = 'success';
                    $count++;
                    if (!update_record('tii_files', $file)) {
                        debugging("update tii score failed");
+                   }
+               } else {
+                   if ($tiiscore=='415') {
+                       mtrace('similarity report not available yet for fileid:'.$file->id);
+                   } else {
+                       mtrace('getting similarity failed for fileid: '.$file->id. ' Error:'.$tiiscore);
                    }
                }
             }
