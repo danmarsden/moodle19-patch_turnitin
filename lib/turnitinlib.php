@@ -265,7 +265,13 @@ function tii_post_to_api($tii, $success, $action='GET', $file='', $savercode='tr
         }
         return true;
     } elseif ($tiixml->rcode[0] == '61') { //this is the report with score.
-        return $tiixml->originalityscore[0];
+         $file->tiiscore = $tiixml->originalityscore[0];
+         $file->tiicode = 'success';
+         $count++;
+         if (!update_record('tii_files', $file)) {
+             debugging("update tii score failed");
+         }
+        return $tiixml->rcode[0];
     } elseif ($tiixml->rcode[0] == '415') { //report not ready yet
         return false;
     } elseif ($tiixml->rcode[0] <> $success) {
@@ -478,15 +484,8 @@ function tii_get_scores() {
                $tii['fid']      = '6';
                $tii['oid']      = $file->tii;
 
-               $tiiscore = tii_post_to_api($tii, 61, 'GET', $file, false, true);
-               if (isset($tiiscore) && $tiiscore=='61') {
-                   $file->tiiscore = $tiiscore;
-                   $file->tiicode = 'success';
-                   $count++;
-                   if (!update_record('tii_files', $file)) {
-                       debugging("update tii score failed");
-                   }
-               } else {
+               $tiiscore = tii_post_to_api($tii, 61, 'GET', $file, false);
+               if ($tiiscore<>'61') {
                    if ($tiiscore=='415') {
                        mtrace('similarity report not available yet for fileid:'.$file->id);
                    } else {
