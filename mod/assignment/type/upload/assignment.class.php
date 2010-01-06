@@ -310,34 +310,7 @@ class assignment_upload extends assignment_base {
                     $ffurl = get_file_url("$filearea/$file");
 
                     $output .= '<a href="'.$ffurl.'" ><img class="icon" src="'.$CFG->pixpath.'/f/'.$icon.'" alt="'.$icon.'" />'.$file.'</a>&nbsp;';
-                    //now get TII stuff if enabled
-                    $moduleid = get_field('modules', 'id','name','assignment');
-                    $assignment = get_record('assignment', 'id', $submission->assignment);
-
-                    if (isset($assignment->use_tii_submission) && $assignment->use_tii_submission) {
-
-                        if (has_capability('moodle/local:viewsimilarityscore', $this->context)) {
-                            include_once($CFG->libdir.'/turnitinlib.php');
-                            if ($tiisettings = tii_get_settings()) {
-                                $tiifile = get_record_select('tii_files', "course='".$COURSE->id.
-                                                         "' AND module='".get_field('modules', 'id','name','assignment').
-                                                         "' AND instance='".$submission->assignment.
-                                                         "' AND userid='".$userid.
-                                                         "' AND filename='".$file.
-                                                         "' AND tiicode<>'pending' AND tiicode<>'51'");
-                                if (isset($tiifile->tiiscore) && $tiifile->tiicode=='success') {
-                                    $rank = tii_get_css_rank($tiifile->tiiscore);
-                                     if (has_capability('moodle/local:viewfullreport', $this->context)) {
-                                         $output .= '<span class="turnitinreport"><a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a><span class="'.$rank.'">'.$tiifile->tiiscore.'%</span></span>';
-                                     } else {
-                                         $output .= '<span class="turnitinreport">'.get_string('similarity', 'turnitin').':<span class="'.$rank.'">'.$tiifile->tiiscore.'%</span></span>';
-                                     }
-                                } elseif(isset($tiifile->tiicode)) {
-                                    $output .= get_tii_error($tiifile->tiicode);
-                                }
-                            }
-                        }
-                    }
+                    $output .= $this->get_turnitin_links($userid, $file);
                 }
             }
         }
@@ -404,37 +377,7 @@ class assignment_upload extends assignment_base {
                         $output .= '<a href="'.$delurl.'">&nbsp;'
                                   .'<img title="'.$strdelete.'" src="'.$CFG->pixpath.'/t/delete.gif" class="iconsmall" alt="" /></a> ';
                     }
-                    //now check whether TII should be shown.
-                    if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission) { //if this assignment uses tii
-                        include_once($CFG->libdir.'/turnitinlib.php');
-                        if ($tiisettings = tii_get_settings()) {
-                            $tiifile = get_record_select('tii_files', "course='".$this->assignment->course.
-                                                    "' AND module='".get_field('modules', 'id','name','assignment').
-                                                    "' AND instance='".$this->assignment->id.
-                                                    "' AND userid='".$userid.
-                                                    "' AND filename='".$file."'");
-                            if (isset($tiifile->tiiscore) && $tiifile->tiicode=='success') { //if TII has returned a succesful score.
-                                $assignclosed = ! $this->isopen();
-                                if (isset($this->assignment->tii_show_student_report) && isset($this->assignment->tii_show_student_score) and //if report and score fields are set.
-                                   ($this->assignment->tii_show_student_report== 1 or $this->assignment->tii_show_student_score ==1 or //if show always is set
-                                   ($this->assignment->tii_show_student_score==2 && $assignclosed) or //if student score to be show when assignment closed
-                                   ($this->assignment->tii_show_student_report==2 && $assignclosed))) { //if student report to be shown when assignment closed
-                                    if (($this->assignment->tii_show_student_report==2 && $assignclosed) or $this->assignment->tii_show_student_report==1) {
-                                        $rank = tii_get_css_rank($tiifile->tiiscore);
-                                        $output .= '<span class="turnitinreport"><a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').'</a>';
-                                        if ($this->assignment->tii_show_student_score==1 or ($this->assignment->tii_show_student_score==2 && $assignclosed)) {
-                                             $output .= ':<span class="'.$rank.'">'.$tiifile->tiiscore.'%</span>';
-                                        }
-                                        $output .= '</span>';
-                                    } else {
-                                        $output .= '<span class="turnitinreport">'.get_string('similarity', 'turnitin').':<span class="'.$rank.'">'.$tiifile->tiiscore.'%</span>';
-                                    }
-                                }
-                            } elseif(isset($tiifile->tiicode)) { //always display errors - even if the student isn't able to see report/score.
-                                   $output .= tii_error_text($tiifile->tiicode);
-                            }
-                        }
-                    }
+                    $output .= $this->get_turnitin_links($userid, $file);
                     $output .= '<br />';
                 }
             }

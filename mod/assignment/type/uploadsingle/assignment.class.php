@@ -26,35 +26,8 @@ class assignment_uploadsingle extends assignment_base {
                     //require_once($ffurl);
                     $output = '<img src="'.$CFG->pixpath.'/f/'.$icon.'" class="icon" alt="'.$icon.'" />'.
                             '<a href="'.$ffurl.'" >'.$file.'</a>';
-                   //now get TII stuff if enabled
-                       $moduleid = get_field('modules', 'id','name','assignment');
-                       $assignment = get_record('assignment', 'id', $submission->assignment);
-
-                       if (isset($assignment->use_tii_submission) && $assignment->use_tii_submission) {
-
-                           if (has_capability('moodle/local:viewsimilarityscore', $this->context)) {
-                               include_once($CFG->libdir.'/turnitinlib.php');
-                               if ($tiisettings = tii_get_settings()) {
-                                   $tiifile = get_record_select('tii_files', "course='".$COURSE->id.
-                                                            "' AND module='".get_field('modules', 'id','name','assignment').
-                                                            "' AND instance='".$submission->assignment.
-                                                            "' AND userid='".$userid.
-                                                            "' AND filename='".$file.
-                                                            "' AND tiicode<>'pending' AND tiicode<>'51'");
-                                   if (isset($tiifile->tiiscore) && $tiifile->tiicode=='success') {
-                                        $rank = tii_get_css_rank($tiifile->tiiscore);
-                                        if (has_capability('moodle/local:viewfullreport', $this->context)) {
-                                            $output .= '<span class="turnitinreport"><a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a><span class="'.$rank.'">'.$tiifile->tiiscore.'%</span></span>';
-                                        } else {
-                                            $output .= '<span class="turnitinreport">'.get_string('similarity', 'turnitin').':<span class="'.$rank.'">'.$tiifile->tiiscore.'%</span></span>';
-                                        }
-                                   } elseif(isset($tiifile->tiicode)) {
-                                       $output .= get_tii_error($tiifile->tiicode);
-                                   }
-                               }
-                           }
-                       }
-                       $output .='<br/>';
+                    $output .= $this->get_turnitin_links($userid, $file);
+                    $output .='<br/>';
 
                 }
             }
