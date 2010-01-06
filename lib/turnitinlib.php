@@ -385,11 +385,12 @@ function tii_send_files() {
                             $tii['ptype']    = '2'; //filetype
                             $tii['pfn']      = $tii['ufn'];
                             $tii['pln']      = $tii['uln'];
-                            $tii['dtstart']  = gmdate('Ymd', time()-86400); //need to fix this to use the assignment date.
+                            $tii['dtstart']  = gmdate('Ymd', time()-86400); //TODO:need to fix this to use the assignment date.
                             if (!empty($module->timedue) && !empty($module->preventlate)) {
                                 $tii['dtdue']    = gmdate('Ymd', $module->timedue+(24 * 60 * 60)); //set to 1 day in future from date due.
                             } else {
-                                $tii['dtdue']    = gmdate('Ymd', time()+ (30 * 24 * 60 * 60)); //set to 30 days in future if not set by the module.
+                                $tii['dtdue']    = gmdate('Ymd', $module->timedue); //set to 30 days in future if not set by the module.
+                                $tii['late_accept_flag'] = 1; //allow late submissions.
                             }
                             $tii['s_view_report'] = '1'; //allow students to view the full report.
                             //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
