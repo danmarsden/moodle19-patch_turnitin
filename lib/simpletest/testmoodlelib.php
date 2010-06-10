@@ -80,9 +80,9 @@ class moodlelib_test extends UnitTestCase {
         $this->assertTrue(address_in_subnet('123.121.234.15', '123.121.234.2/28'));
         $this->assertFalse(address_in_subnet('123.121.234.16', '123.121.234.2/28'));
         $this->assertFalse(address_in_subnet('123.121.234.255', '123.121.234.2/28'));
-        $this->assertTrue(address_in_subnet('123.121.234.0', '123.121.234.0/')); // / is like /32.
+        $this->assertFalse(address_in_subnet('123.121.234.0', '123.121.234.0/')); 
         $this->assertFalse(address_in_subnet('123.121.234.1', '123.121.234.0/'));
-        $this->assertFalse(address_in_subnet('232.232.232.232', '123.121.234.0/0'));
+        $this->assertTrue(address_in_subnet('232.232.232.232', '123.121.234.0/0'));
         $this->assertFalse(address_in_subnet('123.122.234.1', '123.121.'));
         $this->assertFalse(address_in_subnet('223.121.234.1', '123.121.'));
         $this->assertTrue(address_in_subnet('123.121.234.1', '123.121'));
@@ -143,49 +143,37 @@ class moodlelib_test extends UnitTestCase {
         $this->assertEqual(optional_param('username', 'default_user'), 'default_user');
     }
 
-    /**
-     * Used by {@link optional_param()} and {@link required_param()} to
-     * clean the variables and/or cast to specific types, based on
-     * an options field.
-     * <code>
-     * $course->format = clean_param($course->format, PARAM_ALPHA);
-     * $selectedgrade_item = clean_param($selectedgrade_item, PARAM_CLEAN);
-     * </code>
-     *
-     * @uses $CFG
-     * @uses PARAM_CLEAN
-     * @uses PARAM_INT
-     * @uses PARAM_INTEGER
-     * @uses PARAM_ALPHA
-     * @uses PARAM_ALPHANUM
-     * @uses PARAM_NOTAGS
-     * @uses PARAM_ALPHAEXT
-     * @uses PARAM_BOOL
-     * @uses PARAM_SAFEDIR
-     * @uses PARAM_CLEANFILE
-     * @uses PARAM_FILE
-     * @uses PARAM_PATH
-     * @uses PARAM_HOST
-     * @uses PARAM_URL
-     * @uses PARAM_LOCALURL
-     * @uses PARAM_CLEANHTML
-     * @uses PARAM_SEQUENCE
-     * @param mixed $param the variable we are cleaning
-     * @param int $type expected format of param after cleaning.
-     * @return mixed
-     */
-    function test_clean_param()
-    {
-        global $CFG;
-        // Test unknown parameter type
-        
-        // Test Raw param
-        $this->assertEqual(clean_param('#()*#,9789\'".,<42897></?$(*DSFMO#$*)(SDJ)($*)', PARAM_RAW), 
-            '#()*#,9789\'".,<42897></?$(*DSFMO#$*)(SDJ)($*)');
-        
-        $this->assertEqual(clean_param('#()*#,9789\'".,<42897></?$(*DSFMO#$*)(SDJ)($*)', PARAM_CLEAN), 
-            '#()*#,9789\\\'\".,');
+    function test_clean_param_raw() {
+        $this->assertEqual(clean_param('#()*#,9789\'".,<42897></?$(*DSFMO#$*)(SDJ)($*)', PARAM_RAW),
+                '#()*#,9789\'".,<42897></?$(*DSFMO#$*)(SDJ)($*)');
+    }
 
+    function test_clean_param_clean() {
+        $this->assertEqual(clean_param('#()*#,9789\'".,<42897></?$(*DSFMO#$*)(SDJ)($*)', PARAM_CLEAN),
+                '#()*#,9789\\\'\".,');
+    }
+
+    function test_clean_param_alpha() {
+        $this->assertEqual(clean_param('#()*#,9789\'".,<42897></?$(*DSFMO#$*)(SDJ)($*)', PARAM_ALPHA),
+                'DSFMOSDJ');
+    }
+
+    function test_clean_param_alphanum() {
+        $this->assertEqual(clean_param('#()*#,9789\'".,<42897></?$(*DSFMO#$*)(SDJ)($*)', PARAM_ALPHANUM),
+                '978942897DSFMOSDJ');
+    }
+
+    function test_clean_param_alphaext() {
+        $this->assertEqual(clean_param('#()*#,9789\'".,<42897></?$(*DSFMO#$*)(SDJ)($*)', PARAM_ALPHAEXT),
+                '/DSFMOSDJ');
+    }
+
+    function test_clean_param_sequence() {
+        $this->assertEqual(clean_param('#()*#,9789\'".,<42897></?$(*DSFMO#$*)(SDJ)($*)', PARAM_SEQUENCE),
+                ',9789,42897');
+    }
+
+    function test_clean_param_url() {
         // Test PARAM_URL and PARAM_LOCALURL a bit
         $this->assertEqual(clean_param('http://google.com/', PARAM_URL), 'http://google.com/');
         $this->assertEqual(clean_param('http://some.very.long.and.silly.domain/with/a/path/', PARAM_URL), 'http://some.very.long.and.silly.domain/with/a/path/');
@@ -193,12 +181,27 @@ class moodlelib_test extends UnitTestCase {
         $this->assertEqual(clean_param('http://0.255.1.1/numericip.php', PARAM_URL), 'http://0.255.1.1/numericip.php');
         $this->assertEqual(clean_param('/just/a/path', PARAM_URL), '/just/a/path');
         $this->assertEqual(clean_param('funny:thing', PARAM_URL), '');
+    }
 
+    function test_clean_param_localurl() {
+        global $CFG;
         $this->assertEqual(clean_param('http://google.com/', PARAM_LOCALURL), '');
         $this->assertEqual(clean_param('http://some.very.long.and.silly.domain/with/a/path/', PARAM_LOCALURL), '');
         $this->assertEqual(clean_param($CFG->wwwroot, PARAM_LOCALURL), $CFG->wwwroot);
         $this->assertEqual(clean_param('/just/a/path', PARAM_LOCALURL), '/just/a/path');
         $this->assertEqual(clean_param('funny:thing', PARAM_LOCALURL), '');
+    }
+
+    function test_clean_param_file() {
+        $this->assertEqual(clean_param('correctfile.txt', PARAM_FILE), 'correctfile.txt');
+        $this->assertEqual(clean_param('b\'a<d`\\/fi:l>e.t"x|t', PARAM_FILE), 'badfile.txt');
+        $this->assertEqual(clean_param('../parentdirfile.txt', PARAM_FILE), 'parentdirfile.txt');
+        //The following behaviours have been maintained although they seem a little odd
+        $this->assertEqual(clean_param('funny:thing', PARAM_FILE), 'funnything');
+        $this->assertEqual(clean_param('./currentdirfile.txt', PARAM_FILE), '.currentdirfile.txt');
+        $this->assertEqual(clean_param('c:\temp\windowsfile.txt', PARAM_FILE), 'ctempwindowsfile.txt');
+        $this->assertEqual(clean_param('/home/user/linuxfile.txt', PARAM_FILE), 'homeuserlinuxfile.txt');
+        $this->assertEqual(clean_param('~/myfile.txt', PARAM_FILE), '~myfile.txt');
     }
 
     function test_make_user_directory() {
@@ -219,6 +222,79 @@ class moodlelib_test extends UnitTestCase {
         $this->assertFalse(make_user_directory(true, true));
         
     }
-}
 
+    function test_shorten_text() {
+        $text = "short text already no tags";
+        $this->assertEqual($text, shorten_text($text));
+
+        $text = "<p>short <b>text</b> already</p><p>with tags</p>";
+        $this->assertEqual($text, shorten_text($text));
+
+        $text = "long text without any tags blah de blah blah blah what";
+        $this->assertEqual('long text without any tags ...', shorten_text($text));
+
+        $text = "<div class='frog'><p><blockquote>Long text with tags that will ".
+            "be chopped off but <b>should be added back again</b></blockquote></p></div>";
+        $this->assertEqual("<div class='frog'><p><blockquote>Long text with " .
+            "tags that ...</blockquote></p></div>", shorten_text($text));
+
+        $text = "some text which shouldn't &nbsp; break there";
+        $this->assertEqual("some text which shouldn't &nbsp; ...", 
+            shorten_text($text, 31));
+        $this->assertEqual("some text which shouldn't ...", 
+            shorten_text($text, 30));
+        
+        // This case caused a bug up to 1.9.5
+        $text = "<h3>standard 'break-out' sub groups in TGs?</h3>&nbsp;&lt;&lt;There are several";
+        $this->assertEqual("<h3>standard 'break-out' sub groups in ...</h3>",
+            shorten_text($text, 43));
+
+        $text = "<h1>123456789</h1>";//a string with no convenient breaks
+        $this->assertEqual("<h1>12345...</h1>",
+            shorten_text($text, 8));
+    }
+    
+    function test_usergetdate() {
+        global $USER;
+
+        $userstimezone = $USER->timezone;
+        $USER->timezone = 2;//set the timezone to a known state
+
+        $ts = 1261540267; //the time this function was created
+
+        $arr = usergetdate($ts,1);//specify the timezone as an argument
+        $arr = array_values($arr);
+        
+        list($seconds,$minutes,$hours,$mday,$wday,$mon,$year,$yday,$weekday,$month) = $arr;
+        $this->assertEqual($seconds,7);
+        $this->assertEqual($minutes,51);
+        $this->assertEqual($hours,4);
+        $this->assertEqual($mday,23);
+        $this->assertEqual($wday,3);
+        $this->assertEqual($mon,12);
+        $this->assertEqual($year,2009);
+        $this->assertEqual($yday,357);
+        $this->assertEqual($weekday,'Wednesday');
+        $this->assertEqual($month,'December');
+
+        $arr = usergetdate($ts);//gets the timezone from the $USER object
+        $arr = array_values($arr);
+
+        list($seconds,$minutes,$hours,$mday,$wday,$mon,$year,$yday,$weekday,$month) = $arr;
+        $this->assertEqual($seconds,7);
+        $this->assertEqual($minutes,51);
+        $this->assertEqual($hours,5);
+        $this->assertEqual($mday,23);
+        $this->assertEqual($wday,3);
+        $this->assertEqual($mon,12);
+        $this->assertEqual($year,2009);
+        $this->assertEqual($yday,357);
+        $this->assertEqual($weekday,'Wednesday');
+        $this->assertEqual($month,'December');
+
+        //set the timezone back to what it was
+        $USER->timezone = $userstimezone;
+    }
+
+}
 ?>

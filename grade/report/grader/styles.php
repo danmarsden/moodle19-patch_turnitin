@@ -139,12 +139,15 @@ border-style:solid;
 border-width:0 1px;
 }
 
+/* we don't want 25px height - at all
+ * This causes the columns to fall out of line if Static Students Column is enabled
 .grade-report-grader table#user-grades th.category,
 .grade-report-grader table#user-grades th.item,
 .grade-report-grader table#user-grades th.categoryitem,
 .grade-report-grader table#user-grades th.courseitem {
 height: 25px;
 }
+*/
 
 .grade-report-grader td,.grade-report-grader th {
 border-color:#CECECE;
@@ -369,6 +372,10 @@ vertical-align:middle;
 border-right-color:#000;
 }
 
+.grade-report-grader table#fixed_column th.user{
+border-right-color:#cecece;
+}
+
 .grade-report-grader table#fixed_column {
 padding-top:20px;
 border-top:1px solid #cecece;
@@ -384,7 +391,9 @@ padding-top:20px;
 .grade-report-grader .right_scroller {
 width:auto;
 clear:none;
-overflow-x:auto;
+/*force horizontal scrollbar to appear or IE adds one over the bottom row of the table MDL-21088*/
+overflow-x:scroll;
+overflow-y:hidden;
 }
 
 .grade-report-grader table tr.avg,.grade-report-grader table tr.groupavg td,.grade-report-grader table tr.avg td,.grade-report-grader table tr.groupavg th,.grade-report-grader table tr.avg th,.grade-report-grader table tr.controls_row,.grade-report-grader table tr.controls_row th,.grade-report-grader table tr.range_row,.grade-report-grader table tr.range_row th,div.right_scroller tr {
@@ -430,44 +439,17 @@ padding:0;
 }
 
 .grade-report-grader tr.avg,tr.controls,td.controls,th.controls,.grade-report-grader tr.groupavg,tr.range,th.range,td.range,tr.heading th.range {
-height:2em!important;
+height:2.8em!important;
 white-space:nowrap;
 }
-
 .heading_name_row th {
 white-space:nowrap;
 width:2000px;
 }
 
-.ie .right_scroller {
-padding-bottom:15px;
-overflow-y:hidden;
-}
-
-.ie table#fixed_column th {
-height:40.5px;
-}
-
-.ie table#fixed_column tr.avg th {
-height:21px;
-}
-
-.ie div.left_scroller td {
-height:42px;
-}
-
-.ie6 div.left_scroller {
-margin-top:40px;
-}
-
-.ie6 div.right_scroller {
-margin-top:40px;
-width:auto;
-position:absolute;
-}
-
-.ie6 .excludedfloater {
-font-size:7px;
+/*MDL-21088 - IE 7 ignores nowraps on tds or ths so we put a span within it with a nowrap on it*/
+.heading_name_row th span {
+white-space:nowrap;
 }
 
 .grade_icons img.ajax {
@@ -508,7 +490,7 @@ border-style:solid;
 border-width:0;
 }
 
-.grade-report-grader table#user-grades td.useridnumber,.grade-report-grader table#user-grades th,.grade-report-grader div.gradeparent,.ie6 form,.grade-report-grader table#user-grades td.ajax {
+.grade-report-grader table#user-grades td.useridnumber,.grade-report-grader table#user-grades th,.grade-report-grader div.gradeparent,.grade-report-grader table#user-grades td.ajax {
 text-align:left;
 }
 
@@ -517,7 +499,7 @@ background-color:#f3ead8;
 }
 
 .grade-report-grader div.left_scroller tr,.grade-report-grader div.right_scroller tr,.grade-report-grader div.left_scroller td,.grade-report-grader div.right_scroller td,.grade-report-grader div.left_scroller th,.grade-report-grader div.right_scroller th {
-height:4em;
+height:4.4em;
 font-size:10px;
 }
 
@@ -568,5 +550,4 @@ vertical-align:middle;
 #hiddentooltiproot, .tooltipDiv {
   display: none;
 }
-
 

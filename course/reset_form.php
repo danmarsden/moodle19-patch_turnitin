@@ -1,4 +1,8 @@
 <?php // $Id$
+if (!defined('MOODLE_INTERNAL')) {
+    die('Direct access to this script is forbidden.');    ///  It must be included from a Moodle page
+}
+
 require_once $CFG->libdir.'/formslib.php';
 
 class course_reset_form extends moodleform {
@@ -80,6 +84,7 @@ class course_reset_form extends moodleform {
         }
 
         $mform->addElement('hidden', 'id', $COURSE->id);
+        $mform->setType('id', PARAM_INT);
 
         $buttonarray = array();
         $buttonarray[] = &$mform->createElement('submit', 'submitbutton', get_string('resetcourse'));

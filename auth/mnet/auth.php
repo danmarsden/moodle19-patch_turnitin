@@ -208,7 +208,7 @@ class auth_plugin_mnet extends auth_plugin_base {
             $mnet_session->confirm_timeout = time() + $this->config->rpc_negotiation_timeout;
             $mnet_session->expires = time() + (integer)ini_get('session.gc_maxlifetime');
             $mnet_session->session_id = session_id();
-            if (! $mnet_session->id = insert_record('mnet_session', addslashes_object($mnet_session))) {
+            if (! $mnet_session->id = insert_record('mnet_session', addslashes_recursive($mnet_session))) {
                 print_error('databaseerror', 'mnet');
             }
         } else {
@@ -217,7 +217,7 @@ class auth_plugin_mnet extends auth_plugin_base {
             $mnet_session->confirm_timeout = time() + $this->config->rpc_negotiation_timeout;
             $mnet_session->expires = time() + (integer)ini_get('session.gc_maxlifetime');
             $mnet_session->session_id = session_id();
-            if (false == update_record('mnet_session', addslashes_object($mnet_session))) {
+            if (false == update_record('mnet_session', addslashes_recursive($mnet_session))) {
                 print_error('databaseerror', 'mnet');
             }
         }
@@ -228,6 +228,17 @@ class auth_plugin_mnet extends auth_plugin_base {
         $url = "{$mnet_peer->wwwroot}{$mnet_peer->application->sso_land_url}?token={$mnet_session->token}&idp={$MNET->wwwroot}&wantsurl={$wantsurl}";
 
         return $url;
+    }
+
+    /**
+     * after a successful login, land.php will call complete_user_login
+     * which will in turn regenerate the session id.
+     * this means that what is stored in mnet_session table needs updating.
+     *
+     */
+    function update_session_id() {
+        global $USER;
+        return set_field('mnet_session', 'session_id', session_id(), 'username', $USER->username, 'mnethostid', $USER->mnethostid, 'useragent', sha1($_SERVER['HTTP_USER_AGENT']));
     }
 
     /**
@@ -291,16 +302,16 @@ class auth_plugin_mnet extends auth_plugin_base {
         // TODO: refactor into a separate function
         if (empty($localuser) || ! $localuser->id) {
             if (empty($this->config->auto_add_remote_users)) {
-                print_error('nolocaluser', 'mnet');
+                print_error('nolocaluser2', 'mnet');
             }
             $remoteuser->mnethostid = $remotehost->id;
-            if (! insert_record('user', addslashes_object($remoteuser))) {
+            $remoteuser->firstaccess = time(); // First time user in this server, grab it here
+
+            if (!$remoteuser->id =  insert_record('user', addslashes_recursive($remoteuser))) {
                 print_error('databaseerror', 'mnet');
             }
             $firsttime = true;
-            if (! $localuser = get_record('user', 'username', addslashes($remoteuser->username), 'mnethostid', $remotehost->id)) {
-                print_error('nolocaluser', 'mnet');
-            }
+            $localuser = $remoteuser;
         }
 
         // check sso access control list for permission first
@@ -367,8 +378,11 @@ class auth_plugin_mnet extends auth_plugin_base {
         }
 
         $localuser->mnethostid = $remotepeer->id;
+        if (empty($localuser->firstaccess)) { // Now firstaccess, grab it here
+            $localuser->firstaccess = time();
+        }
 
-        $bool = update_record('user', addslashes_object($localuser));
+        $bool = update_record('user', addslashes_recursive($localuser));
         if (!$bool) {
             // TODO: Jonathan to clean up mess
             // Actually, this should never happen (modulo race conditions) - ML
@@ -391,12 +405,12 @@ class auth_plugin_mnet extends auth_plugin_base {
             $mnet_session->confirm_timeout = time();
             $mnet_session->expires = time() + (integer)$session_gc_maxlifetime;
             $mnet_session->session_id = session_id();
-            if (! $mnet_session->id = insert_record('mnet_session', addslashes_object($mnet_session))) {
+            if (! $mnet_session->id = insert_record('mnet_session', addslashes_recursive($mnet_session))) {
                 print_error('databaseerror', 'mnet');
             }
         } else {
             $mnet_session->expires = time() + (integer)$session_gc_maxlifetime;
-            update_record('mnet_session', addslashes_object($mnet_session));
+            update_record('mnet_session', addslashes_recursive($mnet_session));
         }
 
         if (!$firsttime) {
@@ -540,7 +554,7 @@ class auth_plugin_mnet extends auth_plugin_base {
             // First up - do we have a record for this course?
             if (!array_key_exists($course['remoteid'], $currentcourses)) {
                 // No record - we must create it
-                $course['id']  =  insert_record('mnet_enrol_course', addslashes_object((object)$course));
+                $course['id']  =  insert_record('mnet_enrol_course', addslashes_recursive((object)$course));
                 $currentcourse = (object)$course;
             } else {
                 // Pointer to current course:
@@ -558,7 +572,7 @@ class auth_plugin_mnet extends auth_plugin_base {
                 }
 
                 if ($saveflag) {
-                    update_record('mnet_enrol_course', addslashes_object($currentcourse));
+                    update_record('mnet_enrol_course', addslashes_recursive($currentcourse));
                 }
 
                 if (isset($currentcourse->assignmentid) && is_numeric($currentcourse->assignmentid)) {
@@ -581,7 +595,7 @@ class auth_plugin_mnet extends auth_plugin_base {
                 $assignObj->hostid    = (int)$MNET_REMOTE_CLIENT->id;
                 $assignObj->courseid  = $course['id'];
                 $assignObj->rolename  = $course['defaultrolename'];
-                $assignObj->id = insert_record('mnet_enrol_assignments', addslashes_object($assignObj));
+                $assignObj->id = insert_record('mnet_enrol_assignments', addslashes_recursive($assignObj));
             }
         }
 
@@ -589,6 +603,10 @@ class auth_plugin_mnet extends auth_plugin_base {
         $local_courseid_string = implode(', ', $local_courseid_array);
         $whereclause = " userid = '$userid' AND hostid = '{$MNET_REMOTE_CLIENT->id}' AND courseid NOT IN ($local_courseid_string)";
         delete_records_select('mnet_enrol_assignments', $whereclause);
+    }
+
+    function prevent_local_passwords() {
+        return true;
     }
 
     /**
@@ -877,7 +895,7 @@ class auth_plugin_mnet extends auth_plugin_base {
             if (isset($useridarray[$logEntryObj->username])) {
                 $logEntryObj->userid = $useridarray[$logEntryObj->username];
             } else {
-                $logEntryObj->userid = get_field('user','id','username',$logEntryObj->username);
+                $logEntryObj->userid = get_field('user','id','username',$logEntryObj->username,'mnethostid',(int)$logEntryObj->hostid);
                 if ($logEntryObj->userid == false) {
                     $logEntryObj->userid = 0;
                 }
@@ -887,7 +905,7 @@ class auth_plugin_mnet extends auth_plugin_base {
             unset($logEntryObj->username);
 
             $logEntryObj = $this->trim_logline($logEntryObj);
-            $insertok = insert_record('mnet_log', addslashes_object($logEntryObj), false);
+            $insertok = insert_record('mnet_log', addslashes_recursive($logEntryObj), false);
 
             if ($insertok) {
                 $MNET_REMOTE_CLIENT->last_log_id = $logEntryObj->remoteid;
@@ -950,7 +968,7 @@ class auth_plugin_mnet extends auth_plugin_base {
                 // There is no way to capture what the custom session handler
                 // is and then reset it on each pass - I checked that out
                 // already.
-                $sesscache = clone($_SESSION);
+                $sesscache = $_SESSION;
                 $sessidcache = session_id();
                 session_write_close();
                 unset($_SESSION);
@@ -970,7 +988,7 @@ class auth_plugin_mnet extends auth_plugin_base {
                 session_name('MoodleSession'.$CFG->sessioncookie);
                 session_id($sessidcache);
                 session_start();
-                $_SESSION = clone($sesscache);
+                $_SESSION = $sesscache;
                 session_write_close();
             }
         }
@@ -1140,7 +1158,7 @@ class auth_plugin_mnet extends auth_plugin_base {
 
             $uc = ini_get('session.use_cookies');
             ini_set('session.use_cookies', false);
-            $sesscache = clone($_SESSION);
+            $sesscache = $_SESSION;
             $sessidcache = session_id();
             session_write_close();
             unset($_SESSION);
@@ -1159,7 +1177,7 @@ class auth_plugin_mnet extends auth_plugin_base {
             session_name('MoodleSession'.$CFG->sessioncookie);
             session_id($sessidcache);
             session_start();
-            $_SESSION = clone($sesscache);
+            $_SESSION = $sesscache;
             session_write_close();
 
             $end = ob_end_clean();
@@ -1186,7 +1204,7 @@ class auth_plugin_mnet extends auth_plugin_base {
 
             $uc = ini_get('session.use_cookies');
             ini_set('session.use_cookies', false);
-            $sesscache = clone($_SESSION);
+            $sesscache = $_SESSION;
             $sessidcache = session_id();
             session_write_close();
             unset($_SESSION);
@@ -1205,7 +1223,7 @@ class auth_plugin_mnet extends auth_plugin_base {
             session_name('MoodleSession'.$CFG->sessioncookie);
             session_id($sessidcache);
             session_start();
-            $_SESSION = clone($sesscache);
+            $_SESSION = $sesscache;
             session_write_close();
 
             $end = ob_end_clean();
@@ -1228,7 +1246,7 @@ class auth_plugin_mnet extends auth_plugin_base {
 
             $uc = ini_get('session.use_cookies');
             ini_set('session.use_cookies', false);
-            $sesscache = clone($_SESSION);
+            $sesscache = $_SESSION;
             $sessidcache = session_id();
             session_write_close();
             unset($_SESSION);
@@ -1247,7 +1265,7 @@ class auth_plugin_mnet extends auth_plugin_base {
             session_name('MoodleSession'.$CFG->sessioncookie);
             session_id($sessidcache);
             session_start();
-            $_SESSION = clone($sesscache);
+            $_SESSION = $sesscache;
 
             $end = ob_end_clean();
             return true;

@@ -34,6 +34,9 @@ class MoodleQuickForm_selectgroups extends HTML_QuickForm_element {
     
     // {{{ properties
 
+    /** add choose option */
+    var $showchoose = false;
+
     /**
      * Contains the select optgroups
      *
@@ -69,12 +72,14 @@ class MoodleQuickForm_selectgroups extends HTML_QuickForm_element {
      * @param     mixed     An array whose keys are labels for optgroups and whose values are arrays similar to those passed
      *                          to the select element with keys that are values for options and values are strings for display.  
      * @param     mixed     Either a typical HTML attribute string or an associative array
+     * @param     bool      add standard moodle "Choose..." option as first item
      * @since     1.0
      * @access    public
      * @return    void
      */
-    function MoodleQuickForm_selectgroups($elementName=null, $elementLabel=null, $optgrps=null, $attributes=null)
+    function MoodleQuickForm_selectgroups($elementName=null, $elementLabel=null, $optgrps=null, $attributes=null, $showchoose=false)
     {
+        $this->showchoose = $showchoose;
         HTML_QuickForm_element::HTML_QuickForm_element($elementName, $elementLabel, $attributes);
         $this->_persistantFreeze = true;
         $this->_type = 'selectgroups';
@@ -407,7 +412,14 @@ class MoodleQuickForm_selectgroups extends HTML_QuickForm_element {
                             $this->getLabel().'</label>';
             }
             $strHtml .=  '<select' . $attrString . ">\n";
+            if ($this->showchoose) {
+                $strHtml .= $tabs . "\t\t<option value=\"\">" . get_string('choose') . "...</option>\n";
+            }
             foreach ($this->_optGroups as $optGroup) {
+                if (empty($optGroup['options'])) {
+                    //xhtml strict
+                    continue;
+                }
                 $strHtml .= $tabs . "\t<optgroup" . ($this->_getAttrString($optGroup['attr'])) . '>';
                 foreach ($optGroup['options'] as $option){
                     if (is_array($this->_values) && in_array((string)$option['attr']['value'], $this->_values)) {
@@ -477,31 +489,38 @@ class MoodleQuickForm_selectgroups extends HTML_QuickForm_element {
     */
     function exportValue(&$submitValues, $assoc = false)
     {
+        if (empty($this->_optGroups)) {
+            return $this->_prepareValue(null, $assoc);
+        }
+
         $value = $this->_findValue($submitValues);
         if (is_null($value)) {
             $value = $this->getValue();
-        } elseif(!is_array($value)) {
-            $value = array($value);
         }
-        if (is_array($value) && !empty($this->_optGroups)) {
-            $cleanValue = null;
-            foreach ($value as $v) {
-                foreach ($this->_optGroups as $optGroup){
-                    for ($i = 0, $optCount = count($optGroup['options']); $i < $optCount; $i++) {
-                        if ($v == $optGroup['options'][$i]['attr']['value']) {
-                            $cleanValue[] = $v;
-                            break;
-                        }
+        $value = (array)$value;
+
+        $cleaned = array();
+        foreach ($value as $v) {
+            foreach ($this->_optGroups as $optGroup){
+                if (empty($optGroup['options'])) {
+                    continue;
+                }
+                foreach ($optGroup['options'] as $option) {
+                    if ((string)$option['attr']['value'] === (string)$v) {
+                        $cleaned[] = (string)$option['attr']['value'];
+                        break;
                     }
                 }
             }
-        } else {
-            $cleanValue = $value;
         }
-        if (is_array($cleanValue) && !$this->getMultiple()) {
-            return $this->_prepareValue($cleanValue[0], $assoc);
+
+        if (empty($cleaned)) {
+            return $this->_prepareValue(null, $assoc);
+        }
+        if ($this->getMultiple()) {
+            return $this->_prepareValue($cleaned, $assoc);
         } else {
-            return $this->_prepareValue($cleanValue, $assoc);
+            return $this->_prepareValue($cleaned[0], $assoc);
         }
     }
     

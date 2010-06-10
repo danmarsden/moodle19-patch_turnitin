@@ -25,7 +25,6 @@
     $text    = optional_param('text', '', PARAM_RAW);
     $confirm = optional_param('confirm', 0, PARAM_BOOL);
 
-
     if (! $course = get_record("course", "id", $id) ) {
         error("That's an invalid course id");
     }
@@ -40,6 +39,11 @@
     function html_header($course, $wdir, $formfield=""){
 
         global $CFG;
+        if (!empty($_SERVER['HTTPS']) and $_SERVER['HTTPS'] != 'off') {
+            $url = preg_replace('|https?://[^/]+|', '', $CFG->wwwroot).'/lib/editor/htmlarea/';
+        } else {
+            $url = $CFG->wwwroot.'/lib/editor/htmlarea/';
+        }
 
         ?>
         <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -142,7 +146,7 @@
 
             var prev = window.parent.ipreview;
             if(prev != null) {
-                prev.location.replace('about:blank');
+                prev.location.replace('<?php echo $url ?>blank.html');
             }
             var uploader = window.parent.document.forms['uploader'];
             if(uploader != null) {
@@ -717,7 +721,11 @@ function displaydir ($wdir) {
             echo "<tr>";
 
             if ($usecheckboxes) {
-                print_cell("center", "<input type=\"checkbox\" name=\"file$count\" value=\"$fileurl\" onclick=\"return set_rename('$dir');\" />");
+                if ($fileurl === '/moddata') {
+                    print_cell();
+                } else {
+                    print_cell("center", "<input type=\"checkbox\" name=\"file$count\" value=\"$fileurl\" onclick=\"return set_rename('$dir');\" />");
+                }
             }
             print_cell("left", "<a href=\"coursefiles.php?id=$id&amp;wdir=$fileurl\" onclick=\"return reset_value();\"><img src=\"$CFG->pixpath/f/folder.gif\" class=\"icon\" alt=\"".get_string('folder')."\" /></a> <a href=\"coursefiles.php?id=$id&amp;wdir=$fileurl&amp;usecheckboxes=$usecheckboxes\" onclick=\"return reset_value();\">".htmlspecialchars($dir)."</a>");
             print_cell("right", "&nbsp;");

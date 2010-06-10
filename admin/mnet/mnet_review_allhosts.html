@@ -1,10 +1,8 @@
 <?php
 admin_externalpage_print_header();
 
-$tabs[] = new tabobject('mnetdetails', 'peers.php?step=update&amp;hostid='.$mnet_peer->id, $strmnetedithost, $strmnetedithost, false);
-$tabs[] = new tabobject('mnetservices', 'mnet_services.php?step=list&amp;hostid='.$mnet_peer->id, $strmnetservices, $strmnetservices, false);
-$tabs[] = new tabobject('mnetthemes', 'mnet_themes.php?step=list&amp;hostid='.$mnet_peer->id, $strmnetthemes, $strmnetthemes, false);
-print_tabs(array($tabs), 'mnetdetails');
+$currenttab = 'mnetdetails';
+require_once($CFG->dirroot .'/admin/mnet/tabs.php');
 
 print_simple_box_start("center", "");
 ?>
@@ -14,7 +12,7 @@ print_simple_box_start("center", "");
     <td valign="top"><?php echo $mnet_peer->name; ?></td>
 </tr>
 <tr>
-    <td align="right" valign="top" colspan="2"><?php print_string('allhosts_no_options'); ?>:</td>
+    <td align="right" valign="top" colspan="2"><?php print_string('allhosts_no_options','mnet'); ?></td>
 </tr>
 </table>
 <?php

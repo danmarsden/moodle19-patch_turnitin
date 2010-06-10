@@ -71,7 +71,7 @@ class assignment_base {
             error('assignment ID was incorrect');
         }
 
-        $this->assignment->cmidnumber = $this->cm->id;     // compatibility with modedit assignment obj
+        $this->assignment->cmidnumber = $this->cm->idnumber; // compatibility with modedit assignment obj
         $this->assignment->courseid   = $this->course->id; // compatibility with modedit assignment obj
 
         $this->strassignment = get_string('modulename', 'assignment');
@@ -140,7 +140,7 @@ class assignment_base {
                      true, update_module_button($this->cm->id, $this->course->id, $this->strassignment),
                      navmenu($this->course, $this->cm));
 
-        groups_print_activity_menu($this->cm, 'view.php?id=' . $this->cm->id);
+        groups_print_activity_menu($this->cm, $CFG->wwwroot . '/mod/assignment/view.php?id=' . $this->cm->id);
 
         echo '<div class="reportlink">'.$this->submittedlink().'</div>';
         echo '<div class="clearer"></div>';
@@ -901,6 +901,7 @@ class assignment_base {
         echo '<input type="hidden" name="offset" value="'.($offset+1).'" />';
         echo '<input type="hidden" name="userid" value="'.$userid.'" />';
         echo '<input type="hidden" name="id" value="'.$this->cm->id.'" />';
+        echo '<input type="hidden" name="sesskey" value="'.sesskey().'" />';
         echo '<input type="hidden" name="mode" value="grade" />';
         echo '<input type="hidden" name="menuindex" value="0" />';//selected menu index
 
@@ -1080,7 +1081,7 @@ class assignment_base {
         /// find out current groups mode
         $groupmode = groups_get_activity_groupmode($cm);
         $currentgroup = groups_get_activity_group($cm, true);
-        groups_print_activity_menu($cm, 'submissions.php?id=' . $this->cm->id);
+        groups_print_activity_menu($cm, $CFG->wwwroot . '/mod/assignment/submissions.php?id=' . $this->cm->id);
 
         /// Get all ppl that are allowed to submit assignments
         if ($users = get_users_by_capability($context, 'mod/assignment:submit', 'u.id', '', '', '', $currentgroup, '', false)) {
@@ -1316,7 +1317,7 @@ class assignment_base {
                     }
                 }
 
-				$userlink = '<a href="' . $CFG->wwwroot . '/user/view.php?id=' . $auser->id . '&amp;course=' . $course->id . '">' . fullname($auser) . '</a>';
+		$userlink = '<a href="' . $CFG->wwwroot . '/user/view.php?id=' . $auser->id . '&amp;course=' . $course->id . '">' . fullname($auser, has_capability('moodle/site:viewfullnames', $this->context)) . '</a>';
                 $row = array($picture, $userlink, $grade, $comment, $studentmodified, $teachermodified, $status, $finalgrade);
                 if ($uses_outcomes) {
                     $row[] = $outcomes;
@@ -1333,6 +1334,7 @@ class assignment_base {
             echo '<input type="hidden" name="id" value="'.$this->cm->id.'" />';
             echo '<input type="hidden" name="mode" value="fastgrade" />';
             echo '<input type="hidden" name="page" value="'.$page.'" />';
+            echo '<input type="hidden" name="sesskey" value="'.sesskey().'" />';
             echo '</div>';
         }
 
@@ -1392,7 +1394,7 @@ class assignment_base {
         global $CFG, $USER;
         require_once($CFG->libdir.'/gradelib.php');
 
-        if (!$feedback = data_submitted()) {      // No incoming data?
+        if (!$feedback = data_submitted() or !confirm_sesskey()) {      // No incoming data?
             return false;
         }
 
@@ -1460,7 +1462,7 @@ class assignment_base {
 
         require_once($CFG->libdir.'/gradelib.php');
 
-        if (!$formdata = data_submitted()) {
+        if (!$formdata = data_submitted() or !confirm_sesskey()) {
             return;
         }
 
@@ -1798,18 +1800,14 @@ class assignment_base {
      * Return an outline of the user's interaction with the assignment
      *
      * The default method prints the grade and timemodified
-     * @param $user object
+     * @param $grade object
      * @return object with properties ->info and ->time
      */
-    function user_outline($user) {
-        if ($submission = $this->get_submission($user->id)) {
-
-            $result = new object();
-            $result->info = get_string('grade').': '.$this->display_grade($submission->grade);
-            $result->time = $submission->timemodified;
-            return $result;
-        }
-        return NULL;
+    function user_outline($grade) {
+        $result = new object();
+        $result->info = get_string('grade').': '.$grade->str_long_grade;
+        $result->time = $grade->dategraded;
+        return $result;
     }
 
     /**
@@ -1817,7 +1815,14 @@ class assignment_base {
      *
      * @param $user object
      */
-    function user_complete($user) {
+    function user_complete($user, $grade=null) {
+        if ($grade) {
+            echo '<p>'.get_string('grade').': '.$grade->str_long_grade.'</p>';
+            if ($grade->str_feedback) {
+                echo '<p>'.get_string('feedback').': '.$grade->str_feedback.'</p>';
+            }
+        }
+
         if ($submission = $this->get_submission($user->id)) {
             if ($basedir = $this->file_area($user->id)) {
                 if ($files = get_directory_list($basedir)) {
@@ -1837,11 +1842,7 @@ class assignment_base {
 
             echo '<br />';
 
-            if (empty($submission->timemarked)) {
-                print_string("notgradedyet", "assignment");
-            } else {
-                $this->view_feedback($submission);
-            }
+            $this->view_feedback($submission);
 
             print_simple_box_end();
 
@@ -1914,6 +1915,10 @@ class assignment_base {
         $status = array();
 
         $typestr = get_string('type'.$this->type, 'assignment');
+        // ugly hack to support pluggable assignment type titles...
+        if($typestr === '[[type'.$this->type.']]'){
+            $typestr = get_string('type'.$this->type, 'assignment_'.$this->type);
+        }
 
         if (!empty($data->reset_assignment_submissions)) {
             $assignmentssql = "SELECT a.id
@@ -1944,6 +1949,7 @@ class assignment_base {
 
         return $status;
     }
+
     function get_turnitin_links($userid, $file) {
         global $CFG,$USER;
         $output = '';
@@ -1986,6 +1992,69 @@ class assignment_base {
         }
         return $output;
     }
+
+    /**
+     * base implementation for backing up subtype specific information
+     * for one single module
+     *
+     * @param filehandle $bf file handle for xml file to write to
+     * @param mixed $preferences the complete backup preference object
+     *
+     * @return boolean
+     *
+     * @static
+     */
+    function backup_one_mod($bf, $preferences, $assignment) {
+        return true;
+    }
+
+    /**
+     * base implementation for backing up subtype specific information
+     * for one single submission
+     *
+     * @param filehandle $bf file handle for xml file to write to
+     * @param mixed $preferences the complete backup preference object
+     * @param object $submission the assignment submission db record
+     *
+     * @return boolean
+     *
+     * @static
+     */
+    function backup_one_submission($bf, $preferences, $assignment, $submission) {
+        return true;
+    }
+
+    /**
+     * base implementation for restoring subtype specific information
+     * for one single module
+     *
+     * @param array  $info the array representing the xml
+     * @param object $restore the restore preferences
+     *
+     * @return boolean
+     *
+     * @static
+     */
+    function restore_one_mod($info, $restore, $assignment) {
+        return true;
+    }
+
+    /**
+     * base implementation for restoring subtype specific information
+     * for one single submission
+     *
+     * @param object $submission the newly created submission
+     * @param array  $info the array representing the xml
+     * @param object $restore the restore preferences
+     *
+     * @return boolean
+     *
+     * @static
+     */
+    function restore_one_submission($info, $restore, $assignment, $submission) {
+        return true;
+    }
+
 } ////// End of the assignment_base class
 
 
@@ -2062,10 +2131,16 @@ function assignment_add_instance($assignment) {
 function assignment_user_outline($course, $user, $mod, $assignment) {
     global $CFG;
 
+    require_once("$CFG->libdir/gradelib.php");
     require_once("$CFG->dirroot/mod/assignment/type/$assignment->assignmenttype/assignment.class.php");
     $assignmentclass = "assignment_$assignment->assignmenttype";
     $ass = new $assignmentclass($mod->id, $assignment, $mod, $course);
-    return $ass->user_outline($user);
+    $grades = grade_get_grades($course->id, 'mod', 'assignment', $assignment->id, $user->id);
+    if (!empty($grades->items[0]->grades)) {
+        return $ass->user_outline(reset($grades->items[0]->grades));
+    } else {
+        return null;
+    }
 }
 
 /**
@@ -2076,10 +2151,17 @@ function assignment_user_outline($course, $user, $mod, $assignment) {
 function assignment_user_complete($course, $user, $mod, $assignment) {
     global $CFG;
 
+    require_once("$CFG->libdir/gradelib.php");
     require_once("$CFG->dirroot/mod/assignment/type/$assignment->assignmenttype/assignment.class.php");
     $assignmentclass = "assignment_$assignment->assignmenttype";
     $ass = new $assignmentclass($mod->id, $assignment, $mod, $course);
-    return $ass->user_complete($user);
+    $grades = grade_get_grades($course->id, 'mod', 'assignment', $assignment->id, $user->id);
+    if (empty($grades->items[0]->grades)) {
+        $grade = false;
+    } else {
+        $grade = reset($grades->items[0]->grades);
+    }
+    return $ass->user_complete($user, $grade);
 }
 
 /**
@@ -2880,6 +2962,11 @@ function assignment_types() {
     $names = get_list_of_plugins('mod/assignment/type');
     foreach ($names as $name) {
         $types[$name] = get_string('type'.$name, 'assignment');
+
+        // ugly hack to support pluggable assignment type titles..
+        if ($types[$name] == '[[type'.$name.']]') { 
+            $types[$name] = get_string('type'.$name, 'assignment_'.$name);
+        } 
     }
     asort($types);
     return $types;
@@ -3068,7 +3155,7 @@ function assignment_get_types() {
             $type = new object();
             $type->modclass = MOD_CLASS_ACTIVITY;
             $type->type = "assignment&amp;type=$assignmenttype";
-            $type->typestr = get_string("type$assignmenttype", 'assignment');
+            $type->typestr = get_string("type$assignmenttype", 'assignment_'.$assignmenttype);
             $types[] = $type;
         }
     }

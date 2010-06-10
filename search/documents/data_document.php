@@ -6,6 +6,7 @@
 * @category core
 * @subpackage document_wrappers
 * @author Valery Fremaux [valery.fremaux@club-internet.fr] > 1.8
+* @contributor Tatsuva Shirai 20090530
 * @date 2008/03/31
 * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
 *
@@ -79,13 +80,13 @@ class DataCommentSearchDocument extends SearchDocument {
         //remove '(ip.ip.ip.ip)' from data record author field
         $doc->author    = preg_replace('/\(.*?\)/', '', $comment['author']);
         $doc->contents  = $comment['content'];
-        $doc->url       = data_make_link($data_id, $comment['recordid']);
+        $doc->url       = data_make_link($comment['dataid'], $comment['recordid']);
         
         // module specific information; optional
         $data->database = $comment['dataid'];
         
         // construct the parent class
-        parent::__construct($doc, $data, $course_id, $comment['groupid'], $comment['userid'], PATH_FOR_SEARCH_TYPE_DATA);
+        parent::__construct($doc, $data, $course_id, $comment['groupid'], $comment['userid'], 'mod/'.SEARCH_TYPE_DATA);
     } 
 }
 
@@ -109,19 +110,21 @@ function data_make_link($database_id, $record_id) {
 * @uses CFG
 * @return an array of objects representing the data records.
 */
-function data_get_records($database_id, $typematch = '*') {
+function data_get_records($database_id, $typematch = '*', $recordid = 0) {
     global $CFG;
     
     $fieldset = get_records('data_fields', 'dataid', $database_id);
+    $uniquerecordclause = ($recordid > 0) ? " AND c.recordid = $recordid " : '' ;
     $query = "
         SELECT
            c.*
         FROM 
-            {$CFG->prefix}data_content c,
-            {$CFG->prefix}data_records r
+            {$CFG->prefix}data_content as c,
+            {$CFG->prefix}data_records as r
         WHERE
             c.recordid = r.id AND
             r.dataid = {$database_id} 
+            $uniquerecordclause
         ORDER BY 
             c.fieldid
     ";
@@ -161,8 +164,8 @@ function data_get_comments($database_id) {
           c.modified,
           r.dataid
        FROM
-          {$CFG->prefix}data_comments c,
-          {$CFG->prefix}data_records r 
+          {$CFG->prefix}data_comments as c,
+          {$CFG->prefix}data_records as r 
        WHERE
           c.recordid = r.id
     ";
@@ -194,7 +197,7 @@ function data_get_content_for_index(&$database) {
     $context = get_context_instance(CONTEXT_MODULE, $cm->id);
 
     // getting records for indexing
-    $records_content = data_get_records($database->id, 'text');
+    $records_content = data_get_records($database->id, 'text,textarea');
     if ($records_content){
         foreach(array_keys($records_content) as $aRecordId) {
     
@@ -207,14 +210,12 @@ function data_get_content_for_index(&$database) {
             foreach($records_content[$aRecordId] as $aField){
                 $content = @$content.' '.$aField;
             }
-            if (strlen($content) > 0) {
-                unset($recordMetaData);
-                $recordMetaData = get_record('data_records', 'id', $aRecordId);
-                $recordMetaData->title = $first;
-                $recordTitles[$aRecordId] = $first;
-                $recordMetaData->content = $content;
-                $documents[] = new DataSearchDocument(get_object_vars($recordMetaData), $database->course, $context->id);
-            } 
+            unset($recordMetaData);
+            $recordMetaData = get_record('data_records', 'id', $aRecordId);
+            $recordMetaData->title = $first;
+            $recordTitles[$aRecordId] = $first;
+            $recordMetaData->content = $content;
+            $documents[] = new DataSearchDocument(get_object_vars($recordMetaData), $database->course, $context->id);
         } 
     }
 
@@ -222,7 +223,9 @@ function data_get_content_for_index(&$database) {
     $records_comments = data_get_comments($database->id);
     if ($records_comments){
         foreach($records_comments as $aComment){
-            $aComment->title = $recordsTitle[$aComment->recordid];
+            $aComment->title = $recordTitles[$aComment->recordid];
+            $authoruser = get_record('user', 'id', $aComment->userid);
+            $aComment->author = fullname($authoruser);
             $documents[] = new DataCommentSearchDocument(get_object_vars($aComment), $database->course, $context->id);
         }
     }
@@ -245,23 +248,28 @@ function data_single_document($id, $itemtype) {
         $coursemodule = get_field('modules', 'id', 'name', 'data');
         $cm = get_record('course_modules', 'course', $record_course, 'module', $coursemodule, 'instance', $recordMetaData->dataid);
         $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+        // get text fields ids in this data (computable fields)
         // compute text
-        $recordData = get_records_select('data_content', "recordid = $id AND type = 'text'", 'recordid');
-        $accumulator = '';
+        $recordData = data_get_records($recordMetaData->dataid, 'text,textarea', $id);
         if ($recordData){
-            $first = $recordData[0];
-            if (count($recordData) > 1){
-                $others = array_splice($recordData, 0, 1);
-                foreach($others as $aDatum){
-                    $accumulator .= $data->content.' '.$data->content1.' '.$data->content2.' '.$data->content3.' '.$data->content4.' ';
-                }
+            $dataArray = array_values($recordData);
+            $record_content = $dataArray[0]; // We cannot have more than one record here
+
+            // extract title as first record in order
+            $first = $record_content['_first'];
+            unset($record_content['_first']);
+    
+            // concatenates all other texts
+            $content = '';
+            foreach($record_content as $aField){
+                $content = @$content.' '.$aField;
             }
+            unset($recordMetaData);
+            $recordMetaData = get_record('data_records', 'id', $aRecordId);
+            $recordMetaData->title = $first;
+            $recordMetaData->content = $content;
+            return new DataSearchDocument(get_object_vars($recordMetaData), $record_course, $context->id);
         }
-        // add extra fields
-        $recordMetaData->title = $first;
-        $recordMetaData->content = $accumulator;
-        // make document
-        $documents[] = new DataSearchDocument(get_object_vars($recordMetaData), $record_course, $context->id);
     } elseif($itemtype == 'comment') {
         // get main records
         $comment = get_record('data_comments', 'id', $id);
@@ -275,10 +283,13 @@ function data_single_document($id, $itemtype) {
         $comment->title = get_field('search_document', 'title', 'docid', $record->id, 'itemtype', 'record');
         $comment->dataid = $record->dataid;
         $comment->groupid = $record->groupid;
+        $authoruser = get_record('user', 'id', $comment->userid);
+        $comment->author = fullname($authoruser);
         // make document
-        $documents[] = new DataCommentSearchDocument(get_object_vars($comment), $record_course, $context->id);
+        return new DataCommentSearchDocument(get_object_vars($comment), $record_course, $context->id);
     } else {
        mtrace('Error : bad or missing item type');
+       return NULL;
     }
 }
 
@@ -339,8 +350,7 @@ function data_check_text_access($path, $itemtype, $this_id, $user, $group_id, $c
     $data = get_record('data', 'id', $record->dataid);
     $context = get_record('context', 'id', $context_id);
     $cm = get_record('course_modules', 'id', $context->instanceid);
-    // $cm = get_coursemodule_from_instance('data', $data->id, $data->course);
-    // $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    if (empty($cm)) return false; // Shirai 20093005 - MDL19342 - course module might have been delete
 
     if (!$cm->visible and !has_capability('moodle/course:viewhiddenactivities', $context)) {
         if (!empty($CFG->search_access_debug)) echo "search reject : hidden database ";

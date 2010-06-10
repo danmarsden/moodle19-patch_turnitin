@@ -53,15 +53,14 @@
     }
     $dbcontrol = new IndexDBControl();
     $update_count = 0;
-    $indexdate = @$CFG->search_indexer_update_date;
+    $indexdate = 0 + @$CFG->search_indexer_update_date;
     $startupdatedate = time();
 
 /// indexing changed resources
     
     mtrace("Starting index update (updates)...\n");
     
-    if ($mods = get_records_select('modules')) {
-        $mods = array_merge($mods, search_get_additional_modules());
+    if ($mods = search_collect_searchables(false, true)){
         
         foreach ($mods as $mod) {
             $class_file = $CFG->dirroot.'/search/documents/'.$mod->name.'_document.php';

@@ -1627,9 +1627,11 @@ function update_record($table, $dataobject) {
 
     global $db, $CFG;
 
-    if (! isset($dataobject->id) ) {
+    // integer value in id propery required
+    if (empty($dataobject->id)) {
         return false;
     }
+    $dataobject->id = (int)$dataobject->id;
 
 /// Check we are handling a proper $dataobject
     if (is_array($dataobject)) {
@@ -1897,7 +1899,9 @@ function sql_isempty($tablename, $fieldname, $nullablefield, $textfield) {
             break;
     }
 
-    return ' ' . $sql . ' '; /// Adding spaces to avoid wrong SQLs due to concatenation
+    // Add spaces to avoid wrong SQLs due to concatenation.
+    // Add brackets to avoid operator precedence problems.
+    return ' (' . $sql . ') ';
 }
 
 /**

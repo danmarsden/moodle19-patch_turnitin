@@ -25,7 +25,7 @@ if ($hassiteconfig
                                             get_string('alternatelogin', 'auth', htmlspecialchars($CFG->wwwroot.'/login/index.php')), ''));
     $temp->add(new admin_setting_configtext('forgottenpasswordurl', get_string('forgottenpasswordurl', 'auth'),
                                             get_string('forgottenpassword', 'auth'), ''));
-    $temp->add(new admin_setting_configtextarea('auth_instructions', get_string('instructions', 'auth'),
+    $temp->add(new admin_setting_confightmltextarea('auth_instructions', get_string('instructions', 'auth'),
                                                 get_string('authinstructions', 'auth'), ''));
     $temp->add(new admin_setting_configtext('allowemailaddresses', get_string('allowemailaddresses', 'admin'), get_string('configallowemailaddresses', 'admin'), '', PARAM_NOTAGS));
     $temp->add(new admin_setting_configtext('denyemailaddresses', get_string('denyemailaddresses', 'admin'), get_string('configdenyemailaddresses', 'admin'), '', PARAM_NOTAGS));
@@ -41,10 +41,7 @@ if ($hassiteconfig
         $authbyname = array();
 
         foreach ($auths as $auth) {
-            $strauthname = get_string("auth_{$auth}title", "auth");
-            if ($strauthname == "[[auth_{$auth}title]]") {
-                $strauthname = get_string("auth_{$auth}title", "auth_{$auth}");
-            }
+            $strauthname = auth_get_plugin_title($auth);
             $authbyname[$strauthname] = $auth;
         }
         ksort($authbyname);
@@ -113,7 +110,12 @@ if ($hassiteconfig
             }
             if (!$guestroles = get_roles_with_capability('moodle/legacy:guest', CAP_ALLOW)) {
                 $guestroles = array();
+                $defaultguestid = null;
+            } else {
+                $defaultguestid = reset($guestroles);
+                $defaultguestid = $defaultguestid->id;
             }
+            
             // we must not use assignable roles here:
             //   1/ unsetting roles as assignable for admin might bork the settings!
             //   2/ default user role should not be assignable anyway
@@ -130,9 +132,9 @@ if ($hassiteconfig
             }
 
             $temp->add(new admin_setting_configselect('notloggedinroleid', get_string('notloggedinroleid', 'admin'),
-                          get_string('confignotloggedinroleid', 'admin'), $guestrole->id, $allroles ));
+                          get_string('confignotloggedinroleid', 'admin'), $defaultguestid, $allroles ));
             $temp->add(new admin_setting_configselect('guestroleid', get_string('guestroleid', 'admin'),
-                          get_string('configguestroleid', 'admin'), $guestrole->id, $allroles));
+                          get_string('configguestroleid', 'admin'), $defaultguestid, $allroles));
             $temp->add(new admin_setting_configselect('defaultuserroleid', get_string('defaultuserroleid', 'admin'),
                           get_string('configdefaultuserroleid', 'admin'), $userrole->id, $nonguestroles)); // guest role here breaks a lot of stuff
         }

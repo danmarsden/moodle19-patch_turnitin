@@ -179,7 +179,7 @@
         echo '</td>';
 
         echo '<td class="topic starter"><div class="subject">'.$template['title'].'</div><div class="author">';
-        $fullname = fullname($user, $template['userid']);
+        $fullname = fullname($user, has_capability('moodle/site:viewfullnames', get_context_instance(CONTEXT_COURSE, $COURSE->id)));
         $by = new object();
         $by->name =  '<a href="'.$CFG->wwwroot.'/user/view.php?id='.
                     $user->id.'&amp;course='.$COURSE->id.'">'.$fullname.'</a>';
@@ -402,6 +402,11 @@
             return false; // blog system disabled
         }
 
+        // a hack to publish some blogs openly.  Uses $CFG->openblogs = array(44, 322); in config.php
+        if (isset($CFG->openblogs) && in_array($targetuserid,$CFG->openblogs)) {
+            return true;
+        }
+
         if (!empty($USER->id) and $USER->id == $targetuserid) {
             return true; // can view own posts in any case
         }
@@ -490,7 +495,7 @@
         if ($tagid) {
             $tag = $tagid;
         } else if ($tag) {
-            if ($tagrec = get_record_sql('SELECT * FROM '.$CFG->prefix.'tag WHERE name LIKE "'.$tag.'"')) {
+            if ($tagrec = get_record_sql('SELECT * FROM '.$CFG->prefix.'tag WHERE name LIKE "'.addslashes($tag).'"')) {
                 $tag = $tagrec->id;
             } else {
                 $tag = -1;    //no records found
@@ -599,6 +604,11 @@
 
             case 'user':
 
+                // a hack to publish some blogs openly.  Uses $CFG->openblogs = array(44, 322); in config.php
+                if (isset($CFG->openblogs) && in_array($filterselect,$CFG->openblogs)) {
+                    $permissionsql = ' AND (p.publishstate = \'site\' OR p.publishstate = \'public\') ';
+                }
+
                 $SQL = 'SELECT '.$requiredfields.' FROM '.$CFG->prefix.'post p, '.$tagtablesql
                         .$CFG->prefix.'user u
                         WHERE p.userid = u.id '.$tagquerysql.'
@@ -649,17 +659,20 @@
 
 
     /// Find the base url from $_GET variables, for print_paging_bar
+    /// WARNING:  EVIL EVIL EVIL!  This function directly acesses $_GET which is a big no no. MDL-22631
+    /// I added some clean_param() calls for now but $_GET should just not ever be used directly.  
+    /// The function is totally gone in Moodle 2.0.
     function get_baseurl($filtertype, $filterselect) {
 
-        $getcopy  = $_GET;
-
-        unset($getcopy['blogpage']);
+        unset($_GET['blogpage']);
 
         $strippedurl = strip_querystring(qualified_me());
-        if(!empty($getcopy)) {
+        if(!empty($_GET)) {
             $first = false;
             $querystring = '';
-            foreach($getcopy as $var => $val) {
+            foreach($_GET as $var => $val) {
+                $var = clean_param($var, PARAM_ALPHANUM);   // See MDL-22631
+                $val = clean_param($val, PARAM_CLEAN);
                 if(!$first) {
                     $first = true;
                     if ($var != 'filterselect' && $var != 'filtertype') {
@@ -670,8 +683,8 @@
                     }
                 } else {
                     if ($var != 'filterselect' && $var != 'filtertype') {
-                    $querystring .= '&amp;'.$var.'='.$val;
-                    $hasparam = true;
+                        $querystring .= '&amp;'.$var.'='.$val;
+                        $hasparam = true;
                     }
                 }
             }

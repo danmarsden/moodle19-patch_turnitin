@@ -14,6 +14,8 @@
 
     if (!$cm = get_coursemodule_from_instance('data', $data->id)) {
         error("Course Module ID was incorrect");
+    } else {
+        $data->cmidnumber = $cm->id; //MDL-12961
     }
 
     require_login($course, false, $cm);
@@ -33,6 +35,9 @@
         error("This page was not accessed correctly");
     }
 
+/// Calculate scale values
+    $scale_values = make_grades_menu($data->scale);
+
     $count = 0;
 
     foreach ((array)$frmdata as $recordid => $rating) {
@@ -50,6 +55,11 @@
 
         if ($record->userid == $USER->id) {
             continue;
+        }
+
+    /// Check rate is valid for that database scale values
+        if (!array_key_exists($rating, $scale_values) && $rating != -999) {
+            print_error('invalidrate', 'data', '', $rating);
         }
 
         // input validation ok

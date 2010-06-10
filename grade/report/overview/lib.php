@@ -1,27 +1,20 @@
-<?php // $Id$
+<?php
 
-///////////////////////////////////////////////////////////////////////////
-//                                                                       //
-// NOTICE OF COPYRIGHT                                                   //
-//                                                                       //
-// Moodle - Modular Object-Oriented Dynamic Learning Environment         //
-//          http://moodle.com                                            //
-//                                                                       //
-// Copyright (C) 1999 onwards  Martin Dougiamas  http://moodle.com       //
-//                                                                       //
-// This program is free software; you can redistribute it and/or modify  //
-// it under the terms of the GNU General Public License as published by  //
-// the Free Software Foundation; either version 2 of the License, or     //
-// (at your option) any later version.                                   //
-//                                                                       //
-// This program is distributed in the hope that it will be useful,       //
-// but WITHOUT ANY WARRANTY; without even the implied warranty of        //
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         //
-// GNU General Public License for more details:                          //
-//                                                                       //
-//          http://www.gnu.org/copyleft/gpl.html                         //
-//                                                                       //
-///////////////////////////////////////////////////////////////////////////
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 /**
  * File in which the overview_report class is defined.
  * @package gradebook
@@ -55,6 +48,11 @@ class grade_report_overview extends grade_report {
     var $showrank;
 
     /**
+     * show course/category totals if they contain hidden items
+     */
+    var $showtotalsifcontainhidden;
+
+    /**
      * Constructor. Sets local copies of user preferences and initialises grade_tree.
      * @param int $userid
      * @param object $gpr grade plugin return tracking object
@@ -65,6 +63,8 @@ class grade_report_overview extends grade_report {
         parent::grade_report($COURSE->id, $gpr, $context);
 
         $this->showrank = grade_get_setting($this->courseid, 'report_overview_showrank', !empty($CFG->grade_report_overview_showrank));
+        
+        $this->showtotalsifcontainhidden = grade_get_setting($this->courseid, 'report_overview_showtotalsifcontainhidden', $CFG->grade_report_overview_showtotalsifcontainhidden);
 
         // get the user (for full name)
         $this->user = get_record('user', 'id', $userid);
@@ -120,7 +120,7 @@ class grade_report_overview extends grade_report {
                 if (!$course->showgrades) {
                     continue;
                 }
-                $courselink = '<a href="'.$CFG->wwwroot.'/grade/report/user/index.php?id='.$course->id.'">'.$course->shortname.'</a>';
+                $courselink = '<a href="'.$CFG->wwwroot.'/grade/report/user/index.php?id='.$course->id.'&userid='.$this->user->id.'">'.$course->shortname.'</a>';
                 $canviewhidden = has_capability('moodle/grade:viewhidden', get_context_instance(CONTEXT_COURSE, $course->id));
 
                 // Get course grade_item
@@ -134,41 +134,8 @@ class grade_report_overview extends grade_report {
                 if (!$canviewhidden and !is_null($finalgrade)) {
                     if ($course_grade->is_hidden()) {
                         $finalgrade = null;
-
                     } else {
-                        // This is a really ugly hack, it will be fixed in 2.0
-                        $items = grade_item::fetch_all(array('courseid'=>$course->id));
-                        $grades = array();
-                        $sql = "SELECT g.*
-                                  FROM {$CFG->prefix}grade_grades g
-                                  JOIN {$CFG->prefix}grade_items gi ON gi.id = g.itemid
-                                 WHERE g.userid = {$this->user->id} AND gi.courseid = {$course->id}";
-                        if ($gradesrecords = get_records_sql($sql)) {
-                            foreach ($gradesrecords as $grade) {
-                                $grades[$grade->itemid] = new grade_grade($grade, false);
-                            }
-                            unset($gradesrecords);
-                        }
-                        foreach ($items as $itemid=>$unused) {
-                            if (!isset($grades[$itemid])) {
-                                $grade_grade = new grade_grade();
-                                $grade_grade->userid = $this->user->id;
-                                $grade_grade->itemid = $items[$itemid]->id;
-                                $grades[$itemid] = $grade_grade;
-                            }
-                            $grades[$itemid]->grade_item =& $items[$itemid];
-                        }
-                        $hiding_affected = grade_grade::get_hiding_affected($grades, $items);
-                        if (array_key_exists($course_item->id, $hiding_affected['altered'])) {
-                            $finalgrade = $hiding_affected['altered'][$course_item->id];
-
-                        } else if (!empty($hiding_affected['unknown'][$course_item->id])) {
-                            $finalgrade = null;
-                        }
-
-                        unset($hiding_affected);
-                        unset($grades);
-                        unset($items);
+                        $finalgrade = $this->blank_hidden_total($course->id, $course_item, $finalgrade);
                     }
                 }
 
@@ -231,6 +198,7 @@ class grade_report_overview extends grade_report {
 function grade_report_overview_settings_definition(&$mform) {
     global $CFG;
 
+    //show rank
     $options = array(-1 => get_string('default', 'grades'),
                       0 => get_string('hide'),
                       1 => get_string('show'));
@@ -243,6 +211,21 @@ function grade_report_overview_settings_definition(&$mform) {
 
     $mform->addElement('select', 'report_overview_showrank', get_string('showrank', 'grades'), $options);
     $mform->setHelpButton('report_overview_showrank', array('showrank', get_string('showrank', 'grades'), 'grade'));
+
+    //showtotalsifcontainhidden
+    $options = array(-1 => get_string('default', 'grades'),
+                      GRADE_REPORT_HIDE_TOTAL_IF_CONTAINS_HIDDEN => get_string('hide'),
+                      GRADE_REPORT_SHOW_TOTAL_IF_CONTAINS_HIDDEN => get_string('hidetotalshowexhiddenitems', 'grades'),
+                      GRADE_REPORT_SHOW_REAL_TOTAL_IF_CONTAINS_HIDDEN => get_string('hidetotalshowinchiddenitems', 'grades') );
+
+    if (empty($CFG->grade_report_overview_showtotalsifcontainhidden)) {
+        $options[-1] = get_string('defaultprev', 'grades', $options[0]);
+    } else {
+        $options[-1] = get_string('defaultprev', 'grades', $options[1]);
+    }
+
+    $mform->addElement('select', 'report_overview_showtotalsifcontainhidden', get_string('hidetotalifhiddenitems', 'grades'), $options);
+    $mform->setHelpButton('report_overview_showtotalsifcontainhidden', array('hidetotalifhiddenitems', get_string('hidetotalifhiddenitems', 'grades'), 'grade'));
 }
 
 ?>

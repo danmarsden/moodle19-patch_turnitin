@@ -51,7 +51,7 @@
     
 /// check for php5, but don't die yet (see line 52)
 
-    require_once("{$CFG->dirroot}/search/querylib.php");
+    require_once($CFG->dirroot.'/search/querylib.php');
 
     $page_number  = optional_param('page', -1, PARAM_INT);
     $pages        = ($page_number == -1) ? false : true;
@@ -119,9 +119,9 @@
         } 
         
         // add module restriction
-        $doctypestr = get_string('doctype', 'search');
-        $titlestr = get_string('title', 'search');
-        $authorstr = get_string('author', 'search');
+        $doctypestr = 'doctype';
+        $titlestr = 'title';
+        $authorstr = 'author';
         if ($adv->module != 'all') {
             $query_string .= " +{$doctypestr}:".$adv->module;
         } 
@@ -202,23 +202,23 @@
     else {
         print_box_start();
       ?>
-        <input type="hidden" name="a" value="<?php print $advanced; ?>"/>
+        <input type="hidden" name="a" value="<?php p($advanced); ?>"/>
     
         <table border="0" cellpadding="3" cellspacing="3">
     
         <tr>
           <td width="240"><?php print_string('thesewordsmustappear', 'search') ?>:</td>
-          <td><input type="text" name="mustappear" length="50" value="<?php print $adv->mustappear; ?>" /></td>
+          <td><input type="text" name="mustappear" length="50" value="<?php p($adv->mustappear); ?>" /></td>
         </tr>
     
         <tr>
           <td><?php print_string('thesewordsmustnotappear', 'search') ?>:</td>
-          <td><input type="text" name="notappear" length="50" value="<?php print $adv->notappear; ?>" /></td>
+          <td><input type="text" name="notappear" length="50" value="<?php p($adv->notappear); ?>" /></td>
         </tr>
     
         <tr>
           <td><?php print_string('thesewordshelpimproverank', 'search') ?>:</td>
-          <td><input type="text" name="canappear" length="50" value="<?php print $adv->canappear; ?>" /></td>
+          <td><input type="text" name="canappear" length="50" value="<?php p($adv->canappear); ?>" /></td>
         </tr>
     
         <tr>
@@ -251,16 +251,16 @@
     
         <tr>
           <td><?php print_string('wordsintitle', 'search') ?>:</td>
-          <td><input type="text" name="title" length="50" value="<?php print $adv->title; ?>" /></td>
+          <td><input type="text" name="title" length="50" value="<?php p($adv->title); ?>" /></td>
         </tr>
     
         <tr>
           <td><?php print_string('authorname', 'search') ?>:</td>
-          <td><input type="text" name="author" length="50" value="<?php print $adv->author; ?>" /></td>
+          <td><input type="text" name="author" length="50" value="<?php p($adv->author); ?>" /></td>
         </tr>
     
         <tr>
-          <td colspan="3" align="center"><br /><input type="submit" value="<?php print_string('search', 'search') ?>" /></td>
+          <td colspan="3" align="center"><br /><input type="submit" value="<?php p(get_string('search', 'search')) ?>" /></td>
         </tr>
     
         <tr>
@@ -340,9 +340,8 @@
 
             foreach ($hits as $listing) {  
                 
-                if ($listing->doctype == 'user'){ // A special handle for users
-                    
-                    $icon = print_user_picture ($listing->author, 0, true, 0, true, false) ;
+                if ($listing->doctype == 'user'){ // A special handle for users                    
+                    $icon = print_user_picture ($listing->userid, 0, true, 0, true, false) ;
                 } else {
                     $iconpath = $CFG->modpixpath.'/'.$listing->doctype.'/icon.gif';
                     $icon = "<img align=\"top\" src=\"".$iconpath."\" class=\"activityicon\" alt=\"\"/>";
@@ -351,9 +350,6 @@
                 $courseword = mb_convert_case(get_string('course', 'moodle'), MB_CASE_LOWER, 'UTF-8');
                 $course = ($listing->doctype != 'user') ? '<strong> ('.$courseword.': \''.$coursename.'\')</strong>' : '' ;
 
-                //if ($CFG->unicodedb) {
-                //$listing->title = mb_convert_encoding($listing->title, 'auto', 'UTF8');
-                //}
                 $title_post_processing_function = $listing->doctype.'_link_post_processing';
                 $searchable_instance = $searchables[$listing->doctype];
                 if ($searchable_instance->location == 'internal'){

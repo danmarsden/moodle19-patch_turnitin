@@ -71,11 +71,19 @@
             $items = array();
             foreach ($blogposts as $blogpost) {
                 $item = NULL;
-                $item->author = fullname(get_record('user','id',$blogpost->userid));
+                if ($type != 'user') {
+                    $item->author = fullname(get_record('user','id',$blogpost->userid));
+                }
                 $item->title = $blogpost->subject;
                 $item->pubdate = $blogpost->lastmodified;
                 $item->link = $CFG->wwwroot.'/blog/index.php?postid='.$blogpost->id;
                 $item->description = format_text($blogpost->summary, $blogpost->format);
+                if ( !empty($CFG->usetags) && ($blogtags = tag_get_tags_array('post', $blogpost->id)) ) {
+                    if ($blogtags) {
+                        $item->tags = $blogtags;
+                    }
+                    $item->tagscheme = $CFG->wwwroot . '/tag';
+                }
                 $items[] = $item;
             }
             $articles = rss_add_items($items);   /// Change structure to XML
@@ -108,8 +116,13 @@
             $info .= ': '.get_field('tags', 'text', 'id', $tagid);
         }
 
+        if ($type == 'user') {
+            $link = $CFG->wwwroot.'/blog/index.php?userid='.$id;
+        } else {
+            $link = $CFG->wwwroot.'/blog/index.php'; 
+        }
         $header = rss_standard_header(get_string($type.'blog','blog', $info), 
-                                      $CFG->wwwroot.'/blog/index.php', 
+                                      $link,
                                       get_string('intro','blog'));
                                                       
         $footer = rss_standard_footer();

@@ -1917,6 +1917,25 @@ class admin_setting_configtextarea extends admin_setting_configtext {
 }
 
 /**
+ * General text area with html editor.
+ */
+class admin_setting_confightmltextarea extends admin_setting_configtext {
+
+    function admin_setting_confightmltextarea($name, $visiblename, $description, $defaultsetting, $paramtype=PARAM_RAW) {
+        parent::admin_setting_configtext($name, $visiblename, $description, $defaultsetting, $paramtype);
+    }
+
+    function output_html($data, $query='') {
+        global $CFG;
+
+        $CFG->adminusehtmleditor = can_use_html_editor();
+        $return = '<div class="form-htmlarea">'.print_textarea($CFG->adminusehtmleditor, 15, 60, 0, 0, $this->get_full_name(), $data, 0, true).'</div>';
+
+        return format_admin_setting($this, $this->visiblename, $return, $this->description, false, '', NULL, $query);
+    }
+}
+
+/**
  * Password field, allows unmasking of password
  */
 class admin_setting_configpasswordunmask extends admin_setting_configtext {
@@ -2572,16 +2591,24 @@ class admin_setting_users_with_capability extends admin_setting_configmultiselec
      * @param string $capability string capability name.
      */
     function admin_setting_users_with_capability($name, $visiblename, $description, $defaultsetting, $capability) {
+        $this->capability = $capability;
+        parent::admin_setting_configmultiselect($name, $visiblename, $description, $defaultsetting, NULL);
+    }
+
+    function load_choices() {
+        if (is_array($this->choices)) {
+            return true;
+        }
         $users = get_users_by_capability(get_context_instance(CONTEXT_SYSTEM),
-                $capability, 'u.id,u.username,u.firstname,u.lastname', 'u.lastname,u.firstname');
-        $choices = array(
+                $this->capability, 'u.id,u.username,u.firstname,u.lastname', 'u.lastname,u.firstname');
+        $this->choices = array(
             '$@NONE@$' => get_string('nobody'),
-            '$@ALL@$' => get_string('everyonewhocan', 'admin', get_capability_string($capability)),
+            '$@ALL@$' => get_string('everyonewhocan', 'admin', get_capability_string($this->capability)),
         );
         foreach ($users as $user) {
-            $choices[$user->username] = fullname($user);
+            $this->choices[$user->username] = fullname($user);
         }
-        parent::admin_setting_configmultiselect($name, $visiblename, $description, $defaultsetting, $choices);
+        return true;
     }
 
     function get_defaultsetting() {

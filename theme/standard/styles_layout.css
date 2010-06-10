@@ -88,6 +88,7 @@ h6.main {
 
 #redirect {
   text-align: center;
+  margin-top:10%;
 }
 
 #redirect #message {
@@ -1012,6 +1013,10 @@ body#admin-modules table.generaltable td.c0
   margin:auto;
 }
 
+#admin-mnet-index .generalbox table{
+  width:100%;
+}
+
 #admin-index .adminerror,
 #admin-index .adminwarning {
   text-align:center;
@@ -1445,6 +1450,12 @@ a.skip:focus, a.skip:active {
 
 .block_tag_flickr .flickr-photos {
  padding:3px;
+}
+
+.tempblockhandler, .tempblockhandler .content{
+    height: 3px;
+    margin-bottom: -3px;
+    visibility: hidden;
 }
 
 /***

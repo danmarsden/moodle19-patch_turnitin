@@ -1,27 +1,20 @@
-<?php // $Id$
+<?php
 
-///////////////////////////////////////////////////////////////////////////
-//                                                                       //
-// NOTICE OF COPYRIGHT                                                   //
-//                                                                       //
-// Moodle - Modular Object-Oriented Dynamic Learning Environment         //
-//          http://moodle.com                                            //
-//                                                                       //
-// Copyright (C) 1999 onwards  Martin Dougiamas  http://moodle.com       //
-//                                                                       //
-// This program is free software; you can redistribute it and/or modify  //
-// it under the terms of the GNU General Public License as published by  //
-// the Free Software Foundation; either version 2 of the License, or     //
-// (at your option) any later version.                                   //
-//                                                                       //
-// This program is distributed in the hope that it will be useful,       //
-// but WITHOUT ANY WARRANTY; without even the implied warranty of        //
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         //
-// GNU General Public License for more details:                          //
-//                                                                       //
-//          http://www.gnu.org/copyleft/gpl.html                         //
-//                                                                       //
-///////////////////////////////////////////////////////////////////////////
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 /**
  * File in which the user_report class is defined.
  * @package gradebook
@@ -29,6 +22,11 @@
 
 require_once($CFG->dirroot . '/grade/report/lib.php');
 require_once($CFG->libdir.'/tablelib.php');
+
+//showhiddenitems values
+define("GRADE_REPORT_USER_HIDE_HIDDEN", 0);
+define("GRADE_REPORT_USER_HIDE_UNTIL", 1);
+define("GRADE_REPORT_USER_SHOW_HIDDEN", 2);
 
 /**
  * Class providing an API for the user report building and displaying.
@@ -101,13 +99,14 @@ class grade_report_user extends grade_report {
         $this->showrank        = grade_get_setting($this->courseid, 'report_user_showrank', $CFG->grade_report_user_showrank);
         $this->showpercentage  = grade_get_setting($this->courseid, 'report_user_showpercentage', $CFG->grade_report_user_showpercentage);
         $this->showhiddenitems = grade_get_setting($this->courseid, 'report_user_showhiddenitems', $CFG->grade_report_user_showhiddenitems);
+        $this->showtotalsifcontainhidden = grade_get_setting($this->courseid, 'report_user_showtotalsifcontainhidden', $CFG->grade_report_user_showtotalsifcontainhidden);
 
         $this->showrange = true;
 
         $this->switch = grade_get_setting($this->courseid, 'aggregationposition', $CFG->grade_aggregationposition);
 
         // Grab the grade_tree for this course
-        $this->gtree = new grade_tree($this->courseid, false, $this->switch, false, true);
+        $this->gtree = new grade_tree($this->courseid, false, $this->switch, false, !$CFG->enableoutcomes);
 
         // Determine the number of rows and indentation
         $this->maxdepth = 1;
@@ -206,10 +205,10 @@ class grade_report_user extends grade_report {
         $excluded = '';
         $class = '';
 
-        // If this is a hidden grade item, hide it completely from the user. showhiddenitems: 0 = hide all, 1 = show only hidden until, 2 = show all
-        if ($grade_object->is_hidden() && !$this->canviewhidden && (
-                $this->showhiddenitems == 0 ||
-                ($this->showhiddenitems == 1 && !$grade_object->is_hiddenuntil()))) {
+        // If this is a hidden grade category, hide it completely from the user
+        if ($type == 'category' && $grade_object->is_hidden() && !$this->canviewhidden && (
+                $this->showhiddenitems == GRADE_REPORT_USER_HIDE_HIDDEN ||
+                ($this->showhiddenitems == GRADE_REPORT_USER_HIDE_UNTIL && !$grade_object->is_hiddenuntil()))) {
             return false;
         }
 
@@ -233,10 +232,10 @@ class grade_report_user extends grade_report {
                 $hidden = ' hidden';
             }
 
-            // If this is a hidden grade item, hide it completely from the user. showhiddenitems: 0 = hide all, 1 = show only hidden until, 2 = show all
+            // If this is a hidden grade item, hide it completely from the user.
             if ($grade_grade->is_hidden() && !$this->canviewhidden && (
-                    $this->showhiddenitems == 0 ||
-                    ($this->showhiddenitems == 1 && !$grade_grade->is_hiddenuntil()))) {
+                    $this->showhiddenitems == GRADE_REPORT_USER_HIDE_HIDDEN ||
+                    ($this->showhiddenitems == GRADE_REPORT_USER_HIDE_UNTIL && !$grade_grade->is_hiddenuntil()))) {
                 // return false;
             } else {
 
@@ -276,6 +275,7 @@ class grade_report_user extends grade_report {
                     $data['grade']['content'] = '-';
                 } else {
                     $data['grade']['class'] = $class;
+                    $gradeval = $this->blank_hidden_total($this->courseid, $grade_grade->grade_item, $gradeval);
                     $data['grade']['content'] = grade_format_gradevalue($gradeval, $grade_grade->grade_item, true);
                 }
 
@@ -451,18 +451,33 @@ function grade_report_user_settings_definition(&$mform) {
     $mform->setHelpButton('report_user_showpercentage', array('showpercentage', get_string('showpercentage', 'grades'), 'grade'));
 
     $options = array(-1 => get_string('default', 'grades'),
-                      0 => get_string('hide'),
+                      0 => get_string('shownohidden', 'grades'),
                       1 => get_string('showhiddenuntilonly', 'grades'),
-                      2 => get_string('show'));
+                      2 => get_string('showallhidden', 'grades'));
 
     if (empty($CFG->grade_report_user_showhiddenitems)) {
         $options[-1] = get_string('defaultprev', 'grades', $options[0]);
     } else {
-        $options[-1] = get_string('defaultprev', 'grades', $options[1]);
+        $options[-1] = get_string('defaultprev', 'grades', $options[$CFG->grade_report_user_showhiddenitems]);
     }
 
     $mform->addElement('select', 'report_user_showhiddenitems', get_string('showhiddenitems', 'grades'), $options);
     $mform->setHelpButton('report_user_showhiddenitems', array('showhiddenitems', get_string('showhiddenitems', 'grades'), 'grade'));
+
+    //showtotalsifcontainhidden
+    $options = array(-1 => get_string('default', 'grades'),
+                      GRADE_REPORT_HIDE_TOTAL_IF_CONTAINS_HIDDEN => get_string('hide'),
+                      GRADE_REPORT_SHOW_TOTAL_IF_CONTAINS_HIDDEN => get_string('hidetotalshowexhiddenitems', 'grades'),
+                      GRADE_REPORT_SHOW_REAL_TOTAL_IF_CONTAINS_HIDDEN => get_string('hidetotalshowinchiddenitems', 'grades') );
+
+    if (empty($CFG->grade_report_user_showtotalsifcontainhidden)) {
+        $options[-1] = get_string('defaultprev', 'grades', $options[0]);
+    } else {
+        $options[-1] = get_string('defaultprev', 'grades', $options[$CFG->grade_report_user_showtotalsifcontainhidden]);
+    }
+
+    $mform->addElement('select', 'report_user_showtotalsifcontainhidden', get_string('hidetotalifhiddenitems', 'grades'), $options);
+    $mform->setHelpButton('report_user_showtotalsifcontainhidden', array('hidetotalifhiddenitems', get_string('hidetotalifhiddenitems', 'grades'), 'grade'));
 }
 
 function grade_report_user_profilereport($course, $user) {

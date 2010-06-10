@@ -1,5 +1,9 @@
 <?php  // $Id$
 
+if (!defined('MOODLE_INTERNAL')) {
+    die('Direct access to this script is forbidden.');    ///  It must be included from a Moodle page
+}
+
 require_once($CFG->libdir.'/formslib.php');
 
 class question_move_form extends moodleform {
@@ -18,6 +22,7 @@ class question_move_form extends moodleform {
         $this->add_action_buttons(true, get_string('categorymoveto', 'quiz'));
 //--------------------------------------------------------------------------------
         $mform->addElement('hidden', 'delete', $currentcat);
+        $mform->setType('delete', PARAM_INT);
     }
 }
 ?>

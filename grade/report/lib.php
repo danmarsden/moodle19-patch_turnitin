@@ -1,27 +1,20 @@
-<?php // $Id$
+<?php
 
-///////////////////////////////////////////////////////////////////////////
-//                                                                       //
-// NOTICE OF COPYRIGHT                                                   //
-//                                                                       //
-// Moodle - Modular Object-Oriented Dynamic Learning Environment         //
-//          http://moodle.com                                            //
-//                                                                       //
-// Copyright (C) 1999 onwards  Martin Dougiamas  http://moodle.com       //
-//                                                                       //
-// This program is free software; you can redistribute it and/or modify  //
-// it under the terms of the GNU General Public License as published by  //
-// the Free Software Foundation; either version 2 of the License, or     //
-// (at your option) any later version.                                   //
-//                                                                       //
-// This program is distributed in the hope that it will be useful,       //
-// but WITHOUT ANY WARRANTY; without even the implied warranty of        //
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         //
-// GNU General Public License for more details:                          //
-//                                                                       //
-//          http://www.gnu.org/copyleft/gpl.html                         //
-//                                                                       //
-///////////////////////////////////////////////////////////////////////////
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 /**
  * File containing the grade_report class.
  * @package gradebook
@@ -107,6 +100,12 @@ class grade_report {
      * @var int $currentgroup
      */
     var $currentgroup;
+
+    /**
+     * Current course group mode
+     * @var int $groupmode
+     */
+    var $groupmode;
 
     /**
      * A HTML select element used to select the current group.
@@ -294,12 +293,18 @@ class grade_report {
         global $CFG;
 
         /// find out current groups mode
-        $this->group_selector = groups_print_course_menu($this->course, $this->pbarurl, true);
-        $this->currentgroup = groups_get_course_group($this->course);
+        if ($this->groupmode = groups_get_course_groupmode($this->course)) {
+            $this->currentgroup = groups_get_course_group($this->course, true);
+            $this->group_selector = groups_print_course_menu($this->course, $this->pbarurl, true);
 
-        if ($this->currentgroup) {
-            $this->groupsql = " JOIN {$CFG->prefix}groups_members gm ON gm.userid = u.id ";
-            $this->groupwheresql = " AND gm.groupid = $this->currentgroup ";
+            if ($this->groupmode == SEPARATEGROUPS and !$this->currentgroup and !has_capability('moodle/site:accessallgroups', $this->context)) {
+                $this->currentgroup = -2; // means can not accesss any groups at all
+            }
+
+            if ($this->currentgroup) {
+                $this->groupsql = " JOIN {$CFG->prefix}groups_members gm ON gm.userid = u.id ";
+                $this->groupwheresql = " AND gm.groupid = $this->currentgroup ";
+            }
         }
     }
 
@@ -314,8 +319,77 @@ class grade_report {
         $strsort = $this->get_lang_string('sort' . $matrix[$direction]);
 
         $arrow = print_arrow($direction, $strsort, true);
-        $html = '<a href="'.$sort_link .'" alt="'.$strsort.'" title="'.$strsort.'">' . $arrow . '</a>';
+        $html = '<a href="'.$sort_link .'" title="'.$strsort.'">' . $arrow . '</a>';
         return $html;
+    }
+
+    /**
+     * Optionally blank out course/category totals if they contain any hidden items
+     * @param string $courseid the course id
+     * @param string $course_item an instance of grade_item
+     * @param string $finalgrade the grade for the course_item
+     * @return string The new final grade
+     */
+    function blank_hidden_total($courseid, $course_item, $finalgrade) {
+        global $CFG;
+        static $hiding_affected = null;//array of items in this course affected by hiding
+
+        if( $this->showtotalsifcontainhidden==GRADE_REPORT_SHOW_REAL_TOTAL_IF_CONTAINS_HIDDEN ) {
+            return $finalgrade;
+        }
+
+        if( !$hiding_affected ) {
+            $items = grade_item::fetch_all(array('courseid'=>$courseid));
+            $grades = array();
+            $sql = "SELECT g.*
+                      FROM {$CFG->prefix}grade_grades g
+                      JOIN {$CFG->prefix}grade_items gi ON gi.id = g.itemid
+                     WHERE g.userid = {$this->user->id} AND gi.courseid = {$courseid}";
+            if ($gradesrecords = get_records_sql($sql)) {
+                foreach ($gradesrecords as $grade) {
+                    $grades[$grade->itemid] = new grade_grade($grade, false);
+                }
+                unset($gradesrecords);
+            }
+            foreach ($items as $itemid=>$unused) {
+                if (!isset($grades[$itemid])) {
+                    $grade_grade = new grade_grade();
+                    $grade_grade->userid = $this->user->id;
+                    $grade_grade->itemid = $items[$itemid]->id;
+                    $grades[$itemid] = $grade_grade;
+                }
+                $grades[$itemid]->grade_item =& $items[$itemid];
+            }
+            $hiding_affected = grade_grade::get_hiding_affected($grades, $items);
+        }
+
+        //if the item definitely depends on a hidden item
+        if (array_key_exists($course_item->id, $hiding_affected['altered'])) {
+            if( !$this->showtotalsifcontainhidden ) {
+                //hide the grade
+                $finalgrade = null;
+            }
+            else {
+                //use reprocessed marks that exclude hidden items
+                $finalgrade = $hiding_affected['altered'][$course_item->id];
+            }
+        } else if (!empty($hiding_affected['unknown'][$course_item->id])) {
+            //not sure whether or not this item depends on a hidden item
+            if( !$this->showtotalsifcontainhidden ) {
+                //hide the grade
+                $finalgrade = null;
+            }
+            else {
+                //use reprocessed marks that exclude hidden items
+                $finalgrade = $hiding_affected['unknown'][$course_item->id];
+            }
+        }
+
+        //unset($hiding_affected);
+        //unset($grades);
+        //unset($items);
+
+        return $finalgrade;
     }
 }
 ?>

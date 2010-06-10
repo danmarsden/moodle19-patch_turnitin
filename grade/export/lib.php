@@ -1,27 +1,20 @@
-<?php // $Id$
+<?php
 
-///////////////////////////////////////////////////////////////////////////
-//                                                                       //
-// NOTICE OF COPYRIGHT                                                   //
-//                                                                       //
-// Moodle - Modular Object-Oriented Dynamic Learning Environment         //
-//          http://moodle.com                                            //
-//                                                                       //
-// Copyright (C) 1999 onwards  Martin Dougiamas  http://moodle.com       //
-//                                                                       //
-// This program is free software; you can redistribute it and/or modify  //
-// it under the terms of the GNU General Public License as published by  //
-// the Free Software Foundation; either version 2 of the License, or     //
-// (at your option) any later version.                                   //
-//                                                                       //
-// This program is distributed in the hope that it will be useful,       //
-// but WITHOUT ANY WARRANTY; without even the implied warranty of        //
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         //
-// GNU General Public License for more details:                          //
-//                                                                       //
-//          http://www.gnu.org/copyleft/gpl.html                         //
-//                                                                       //
-///////////////////////////////////////////////////////////////////////////
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 
 require_once($CFG->dirroot.'/lib/gradelib.php');
 require_once($CFG->dirroot.'/grade/lib.php');
@@ -191,8 +184,9 @@ class grade_export {
 
     /**
      * Prints preview of exported grades on screen as a feedback mechanism
+     * @param bool $require_user_idnumber true means skip users without idnumber
      */
-    function display_preview() {
+    function display_preview($require_user_idnumber=false) {
 
         print_heading(get_string('previewrows', 'grades'));
 
@@ -224,10 +218,11 @@ class grade_export {
                 break;
             }
             $user = $userdata->user;
-            // if (empty($user->idnumber)) {   // Not sure why this was here, ccommented out for MDL-13722
-            //     continue;
-            // }
-            
+            if ($require_user_idnumber and empty($user->idnumber)) {
+                // some exports require user idnumber
+                continue;
+            }
+
             $gradeupdated = false; // if no grade is update at all for this user, do not display this row
             $rowstr = '';
             foreach ($this->columns as $itemid=>$unused) {

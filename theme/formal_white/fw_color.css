@@ -398,7 +398,7 @@ table.minicalendar tr td.weekend {
 }
 
 #mod-forum-discuss .forumpost.unread .content {
-  border-color: #C6BDA8; 
+/*  border-color: #C6BDA8; */
 } 
 
 #mod-forum-discuss .forumthread .unread {
@@ -447,7 +447,7 @@ table.minicalendar tr td.weekend {
  ***/
 
 .errorbox {
-/*   color:#ffffff; */
+   color:#000000;
    border-color:#990000;
    background-color:#FEF9F6;
  }

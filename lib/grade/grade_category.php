@@ -553,7 +553,7 @@ class grade_category extends grade_object {
         }
 
         // limit and sort
-        $this->apply_limit_rules($grade_values);
+        $this->apply_limit_rules($grade_values, $items);
         asort($grade_values, SORT_NUMERIC);
 
         // let's see we have still enough grades to do any statistics
@@ -714,22 +714,25 @@ class grade_category extends grade_object {
             return;
         }
 
-        $max = 0;
-
-        //find max grade
+        //find max grade possible
+        $maxes = array();
         foreach ($items as $item) {
             if ($item->aggregationcoef > 0) {
                 // extra credit from this activity - does not affect total
                 continue;
             }
             if ($item->gradetype == GRADE_TYPE_VALUE) {
-                $max += $item->grademax;
+                $maxes[$item->id] = $item->grademax;
             } else if ($item->gradetype == GRADE_TYPE_SCALE) {
-                $max += $item->grademax; // 0 = nograde, 1 = first scale item, 2 = second scale item
+                $maxes[$item->id] = $item->grademax; // 0 = nograde, 1 = first scale item, 2 = second scale item
             }
         }
+        // apply droplow and keephigh
+        $this->apply_limit_rules($maxes, $items);
+        $max = array_sum($maxes);
 
-        if ($this->grade_item->grademax != $max or $this->grade_item->grademin != 0 or $this->grade_item->gradetype != GRADE_TYPE_VALUE){
+        // update db if anything changed
+        if ($this->grade_item->grademax != $max or $this->grade_item->grademin != 0 or $this->grade_item->gradetype != GRADE_TYPE_VALUE) {
             $this->grade_item->grademax  = $max;
             $this->grade_item->grademin  = 0;
             $this->grade_item->gradetype = GRADE_TYPE_VALUE;
@@ -771,7 +774,7 @@ class grade_category extends grade_object {
             }
         }
 
-        $this->apply_limit_rules($grade_values);
+        $this->apply_limit_rules($grade_values, $items);
 
         $sum = array_sum($grade_values);
         $grade->finalgrade = $this->grade_item->bounded_grade($sum);
@@ -787,22 +790,54 @@ class grade_category extends grade_object {
     /**
      * Given an array of grade values (numerical indices), applies droplow or keephigh
      * rules to limit the final array.
-     * @param array $grade_values
+     * @param array $grade_values itemid=>$grade_value float
+     * @param array $items grade titem objects
      * @return array Limited grades.
      */
-    function apply_limit_rules(&$grade_values) {
-        arsort($grade_values, SORT_NUMERIC);
+    function apply_limit_rules(&$grade_values, $items) {
+        $extraused = $this->is_extracredit_used();
+
         if (!empty($this->droplow)) {
-            for ($i = 0; $i < $this->droplow; $i++) {
-                array_pop($grade_values);
+            asort($grade_values, SORT_NUMERIC);
+            $dropped = 0;
+            foreach ($grade_values as $itemid=>$value) {
+                if ($dropped < $this->droplow) {
+                    if ($extraused and $items[$itemid]->aggregationcoef > 0) {
+                        // no drop low for extra credits
+                    } else {
+                        unset($grade_values[$itemid]);
+                        $dropped++;
+                    }
+                } else {
+                    // we have dropped enough
+                    break;
+                }
             }
-        } elseif (!empty($this->keephigh)) {
-            while (count($grade_values) > $this->keephigh) {
-                array_pop($grade_values);
+
+        } else if (!empty($this->keephigh)) {
+            arsort($grade_values, SORT_NUMERIC);
+            $kept = 0;
+            foreach ($grade_values as $itemid=>$value) {
+                if ($extraused and $items[$itemid]->aggregationcoef > 0) {
+                    // we keep all extra credits
+                } else if ($kept < $this->keephigh) {
+                    $kept++;
+                } else {
+                    unset($grade_values[$itemid]);
+                }
             }
         }
     }
 
+    /**
+     * Returns true if category uses extra credit of any kind
+     * @return boolean true if extra credit used
+     */
+    function is_extracredit_used() {
+        return ($this->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2
+             or $this->aggregation == GRADE_AGGREGATE_EXTRACREDIT_MEAN
+             or $this->aggregation == GRADE_AGGREGATE_SUM);
+    }
 
     /**
      * Returns true if category uses special aggregation coeficient
@@ -1337,6 +1372,18 @@ class grade_category extends grade_object {
                 foreach($children as $child) {
                     $child->set_hidden($hidden, $cascade);
                 }
+            }
+        }
+
+        //if marking category visible make sure parent category is visible MDL-21367
+        if( !$hidden ) {
+            $category_array = grade_category::fetch_all(array('id'=>$this->parent));
+            if ($category_array && array_key_exists($this->parent, $category_array)) {
+                $category = $category_array[$this->parent];
+                //call set_hidden on the category regardless of whether it is hidden as its parent might be hidden
+                //if($category->is_hidden()) {
+                    $category->set_hidden($hidden, false);
+                //}
             }
         }
     }

@@ -50,8 +50,8 @@
 
             if (confirm_sesskey() and !empty($pack)) {
                 set_time_limit(0);
-                @mkdir ($CFG->dataroot.'/temp/');    //make it in case it's a fresh install, it might not be there
-                @mkdir ($CFG->dataroot.'/lang/');
+                @mkdir ($CFG->dataroot.'/temp/', $CFG->directorypermissions);    //make it in case it's a fresh install, it might not be there
+                @mkdir ($CFG->dataroot.'/lang/', $CFG->directorypermissions);
 
                 if (is_array($pack)) {
                     $packs = $pack;
@@ -167,8 +167,8 @@
                 }
             }
 
-            @mkdir ($CFG->dataroot.'/temp/');
-            @mkdir ($CFG->dataroot.'/lang/');
+            @mkdir ($CFG->dataroot.'/temp/', $CFG->directorypermissions);
+            @mkdir ($CFG->dataroot.'/lang/', $CFG->directorypermissions);
             foreach ($packs as $pack){    //for each of the remaining in the list, we
                 if ($pack == 'en_utf8') {    // no update for en_utf8
                     continue;
@@ -248,7 +248,7 @@
         if ($parent == 'en_utf8') {
             continue;
         }
-        if (strpos($parent, '[[') !== false) {
+        if (empty($parent) || strpos($parent, '[[') !== false) {
             continue; // no parent
         }
         if (!isset($installedlangs[$parent])) {

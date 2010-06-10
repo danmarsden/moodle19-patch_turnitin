@@ -57,9 +57,14 @@ class auth_plugin_cas extends auth_plugin_base {
      * @return bool Authentication success or failure.
      */
     function user_login ($username, $password) {
-		$this->connectCAS();	
-        return phpCAS::isAuthenticated();
+		$this->connectCAS();
+		return phpCAS::isAuthenticated() && (trim(moodle_strtolower(phpCAS::getUser())) == $username);
     }
+
+    function prevent_local_passwords() {
+        return true;
+    }
+
     /**
      * Returns true if this authentication plugin is 'internal'.
      *
@@ -92,8 +97,10 @@ class auth_plugin_cas extends auth_plugin_base {
       $username = optional_param("username");
 
       if (!empty($username)) {
-		  if (strstr($SESSION->wantsurl,'ticket') || strstr($SESSION->wantsurl,'NOCAS'))
-			  unset($SESSION->wantsurl);
+          if (isset($SESSION->wantsurl) && (strstr($SESSION->wantsurl, 'ticket') ||
+                                            strstr($SESSION->wantsurl, 'NOCAS'))) {
+              unset($SESSION->wantsurl);
+          }
           return;		
         }
 
@@ -107,6 +114,9 @@ class auth_plugin_cas extends auth_plugin_base {
 // Connection to CAS server
 	 $this->connectCAS();
 
+         // Don't try to validate the server SSL credentials
+         phpCAS::setNoCasServerValidation();
+
 	  // Gestion de la connection CAS si acc�s direct d'un ent ou autre	
 	 if (phpCAS::checkAuthentication()) {
 		$frm->username=phpCAS::getUser();
@@ -116,7 +126,7 @@ class auth_plugin_cas extends auth_plugin_base {
 		return;
 	 }	 	
 
-	  if ($_GET["loginguest"]== true) {
+          if (isset($_GET["loginguest"]) && ($_GET["loginguest"]== true)) {
 			$frm->username="guest";
 			$frm->password="guest";
 			return;
@@ -156,7 +166,7 @@ class auth_plugin_cas extends auth_plugin_base {
 	  if ($this->config->logoutcas ) {
 	        $backurl = $CFG->wwwroot;
 		  $this->connectCAS();
-	        phpCAS::logout($backurl);
+                phpCAS::logoutWithURL($backurl);
 	     }
     }
     /**
@@ -170,12 +180,13 @@ class auth_plugin_cas extends auth_plugin_base {
 	global $PHPCAS_CLIENT;
 // mode proxy CAS
 if ( !is_object($PHPCAS_CLIENT) ) {
+        // Make sure phpCAS doesn't try to start a new PHP session when connecting to the CAS server.
 	if  ($this->config->proxycas) {
-	    phpCAS::proxy($this->config->casversion, $this-> config->hostname, (int) $this->config->port, $this->config->baseuri);
+	    phpCAS::proxy($this->config->casversion, $this-> config->hostname, (int) $this->config->port, $this->config->baseuri, false);
 	}
 // mode client CAS
 	else {
-	    phpCAS::client($this->config->casversion, $this-> config->hostname, (int) $this->config->port, $this->config->baseuri);
+	    phpCAS::client($this->config->casversion, $this-> config->hostname, (int) $this->config->port, $this->config->baseuri, false);
 	}
     }
 	
@@ -768,9 +779,9 @@ if ( !is_object($PHPCAS_CLIENT) ) {
                     $updateuser->id = $user->id;
                     $updateuser->auth = 'cas';
                     if (update_record('user', $updateuser)) {
-                        echo "\t"; print_string('auth_dbreviveser', 'auth', array($user->username, $user->id)); echo "\n";
+                        echo "\t"; print_string('auth_dbreviveduser', 'auth', array($user->username, $user->id)); echo "\n";
                     } else {
-                        echo "\t"; print_string('auth_dbreviveusererror', 'auth', $user->username); echo "\n";
+                        echo "\t"; print_string('auth_dbrevivedusererror', 'auth', $user->username); echo "\n";
                     }
                 }
                 commit_sql();

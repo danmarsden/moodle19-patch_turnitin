@@ -16,7 +16,7 @@
     if (!isset($config->opt_deref))
         { $config->opt_deref = LDAP_DEREF_NEVER; }
     if (!isset($config->preventpassindb))
-        { $config->preventpassindb = 0; }
+        { $config->preventpassindb = 1; }
     if (!isset($config->bind_dn))
         {$config->bind_dn = ''; }
     if (!isset($config->bind_pw))
@@ -92,7 +92,7 @@ if (!function_exists('ldap_connect')) { // Is php4-ldap really there?
     <td align="right"><label for="menuversion"><?php print_string('auth_ldap_version_key','auth') ?></label></td>
     <td>
     <?php
-       $varsions = array();
+       $versions = array();
        $versions[2] = '2';
        $versions[3] = '3';
        choose_from_menu($versions, 'version', $config->version, '');
@@ -199,7 +199,7 @@ if (!function_exists('ldap_connect')) { // Is php4-ldap really there?
        $opt_deref = array();
        $opt_deref[LDAP_DEREF_NEVER] = get_string('no');
        $opt_deref[LDAP_DEREF_ALWAYS] = get_string('yes');
-       choose_from_menu($opt_deref, 'opt_deref', $config->opt_deref, LDAP_DEREF_NEVER, '');
+       choose_from_menu($opt_deref, 'opt_deref', $config->opt_deref, '');
        if (isset($err['opt_deref'])) formerr($err['opt_deref']);
     ?>
     </td>

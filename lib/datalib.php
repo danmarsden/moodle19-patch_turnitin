@@ -42,22 +42,15 @@ function addslashes_object( $dataobject ) {
  * @return object(admin) An associative array representing the admin user.
  */
 function get_admin () {
-
-    global $CFG;
     static $myadmin;
 
-    if (isset($myadmin)) {
-        return $myadmin;
-    }
-
-    if ( $admins = get_admins() ) {
-        foreach ($admins as $admin) {
-            $myadmin = $admin;
-            return $admin;   // ie the first one
+    if (! isset($admin)) {
+        if (! $admins = get_admins()) {
+            return false;
         }
-    } else {
-        return false;
+        $admin = reset($admins);//reset returns first element
     }
+    return $admin;
 }
 
 /**
@@ -916,10 +909,12 @@ function get_my_courses($userid, $sort='visible DESC,sortorder ASC', $fields=NUL
                 // build the context obj
                 $c = make_context_subobj($c);
 
-                $courses[$c->id] = $c;
-                if ($limit > 0 && $cc++ > $limit) {
+                if ($limit > 0 && $cc >= $limit) {
                     break;
                 }
+                
+                $courses[$c->id] = $c;
+                $cc++;
             }
             rs_close($rs);
             return $courses;
@@ -1098,6 +1093,8 @@ function get_courses_search($searchterms, $sort='fullname ASC', $page=0, $record
 
     $fullnamesearch = '';
     $summarysearch = '';
+    $idnumbersearch = '';
+    $shortnamesearch = '';
 
     foreach ($searchterms as $searchterm) {
 
@@ -1119,18 +1116,30 @@ function get_courses_search($searchterms, $sort='fullname ASC', $page=0, $record
         if ($summarysearch) {
             $summarysearch .= ' AND ';
         }
+        if ($idnumbersearch) {
+            $idnumbersearch .= ' AND ';
+        }
+        if ($shortnamesearch) {
+            $shortnamesearch .= ' AND ';
+        }
 
         if (substr($searchterm,0,1) == '+') {
             $searchterm      = substr($searchterm,1);
             $summarysearch  .= " c.summary $REGEXP '(^|[^a-zA-Z0-9])$searchterm([^a-zA-Z0-9]|$)' ";
             $fullnamesearch .= " c.fullname $REGEXP '(^|[^a-zA-Z0-9])$searchterm([^a-zA-Z0-9]|$)' ";
+            $idnumbersearch  .= " c.idnumber $REGEXP '(^|[^a-zA-Z0-9])$searchterm([^a-zA-Z0-9]|$)' ";
+            $shortnamesearch  .= " c.shortname $REGEXP '(^|[^a-zA-Z0-9])$searchterm([^a-zA-Z0-9]|$)' ";
         } else if (substr($searchterm,0,1) == "-") {
             $searchterm      = substr($searchterm,1);
             $summarysearch  .= " c.summary $NOTREGEXP '(^|[^a-zA-Z0-9])$searchterm([^a-zA-Z0-9]|$)' ";
             $fullnamesearch .= " c.fullname $NOTREGEXP '(^|[^a-zA-Z0-9])$searchterm([^a-zA-Z0-9]|$)' ";
+            $idnumbersearch .= " c.idnumber $NOTREGEXP '(^|[^a-zA-Z0-9])$searchterm([^a-zA-Z0-9]|$)' ";
+            $shortnamesearch .= " c.shortname $NOTREGEXP '(^|[^a-zA-Z0-9])$searchterm([^a-zA-Z0-9]|$)' ";
         } else {
             $summarysearch .= ' summary '. $NOT . $LIKE .' \'%'. $searchterm .'%\' ';
             $fullnamesearch .= ' fullname '. $NOT . $LIKE .' \'%'. $searchterm .'%\' ';
+            $idnumbersearch .= ' idnumber '. $NOT . $LIKE .' \'%'. $searchterm .'%\' ';
+            $shortnamesearch .= ' shortname '. $NOT . $LIKE .' \'%'. $searchterm .'%\' ';
         }
 
     }
@@ -1141,7 +1150,7 @@ function get_courses_search($searchterms, $sort='fullname ASC', $page=0, $record
             FROM {$CFG->prefix}course c
             JOIN {$CFG->prefix}context ctx
              ON (c.id = ctx.instanceid AND ctx.contextlevel=".CONTEXT_COURSE.")
-            WHERE (( $fullnamesearch ) OR ( $summarysearch ))
+            WHERE (( $fullnamesearch ) OR ( $summarysearch ) OR ( $idnumbersearch ) OR ( $shortnamesearch ))
                   AND category > 0
             ORDER BY " . $sort;
 
@@ -1334,7 +1343,7 @@ function fix_course_sortorder($categoryid=0, $n=0, $safe=0, $depth=0, $path='') 
     // $mustshift indicates whether the sequence must be shifted to
     // meet its range
     $mustshift = false;
-    if ($min < $n+$tolerance || $min > $n+$tolerance+$catgap ) {
+    if ($min < $n-$tolerance || $min > $n+$tolerance+$catgap ) {
         $mustshift = true;
     }
 
@@ -1869,9 +1878,14 @@ function add_to_log($courseid, $module, $action, $url='', $info='', $cm=0, $user
     // so it has been optimised for speed.
     global $db, $CFG, $USER;
 
-    if ($cm === '' || is_null($cm)) { // postgres won't translate empty string to its default
-        $cm = 0;
-    }
+    // sanitize all incoming data
+    $courseid = clean_param($courseid, PARAM_INT);
+    $module   = clean_param($module, PARAM_SAFEDIR);
+    $action   = addslashes($action);
+    // url cleaned bellow
+    // info cleaned bellow
+    $cm       = clean_param($cm, PARAM_INT);
+    $user     = clean_param($user, PARAM_INT);
 
     if ($user) {
         $userid = $user;
@@ -1888,7 +1902,6 @@ function add_to_log($courseid, $module, $action, $url='', $info='', $cm=0, $user
     }
 
     $timenow = time();
-    $info = addslashes($info);
     if (!empty($url)) { // could break doing html_entity_decode on an empty var.
         $url = html_entity_decode($url); // for php < 4.3.0 this is defined in moodlelib.php
     }
@@ -1902,6 +1915,7 @@ function add_to_log($courseid, $module, $action, $url='', $info='', $cm=0, $user
         $info=$tl->substr($info,0,252).'...';
         debugging('Warning: logged very long info',DEBUG_DEVELOPER);
     }
+    $info = addslashes($info);
     // Note: Unlike $info, URL appears to be already slashed before this function
     // is called. Since database limits are for the data before slashes, we need
     // to remove them...
@@ -1915,11 +1929,8 @@ function add_to_log($courseid, $module, $action, $url='', $info='', $cm=0, $user
 
     if (defined('MDL_PERFDB')) { global $PERF ; $PERF->dbqueries++; $PERF->logwrites++;};
 
-    if ($CFG->type = 'oci8po') {
-        if (empty($info)) {
-            $info = ' ';
-        }
-    }
+    $info = empty($info) ? sql_empty() : $info; // Use proper empties for each database
+    $url  = empty($url)  ? sql_empty() : $url;
     $sql ='INSERT INTO '. $CFG->prefix .'log (time, userid, course, ip, module, cmid, action, url, info)
         VALUES (' . "'$timenow', '$userid', '$courseid', '$REMOTE_ADDR', '$module', '$cm', '$action', '$url', '$info')";
 
@@ -1981,6 +1992,9 @@ function user_accesstime_log($courseid=0) {
         if (defined('MDL_PERFDB')) { global $PERF ; $PERF->dbqueries++;};
 
         $remoteaddr = getremoteaddr();
+        if (empty($remoteaddr)) {
+            $remoteaddr = '0.0.0.0';
+        }
         if ($db->Execute("UPDATE {$CFG->prefix}user
                              SET lastip = '$remoteaddr', lastaccess = $timenow
                            WHERE id = $USER->id")) {

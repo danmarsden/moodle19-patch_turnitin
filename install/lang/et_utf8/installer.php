@@ -12,6 +12,7 @@
 $string['admindirerror']='Valitud administreerimiskataloog on vale';
 $string['admindirname']='Administreerimiskataloog';
 $string['admindirsettinghead']='Kataloogi admin seadistamine ...';
+$string['bypassed']='Läbitud';
 $string['cannotcreatelangdir']='Ei saa luua lang kataloogi';
 $string['cannotcreatetempdir']='Ei saa luua temp kataloogi';
 $string['cannotdownloadcomponents']='Ei saa alla tõmmata komponente.';
@@ -83,8 +84,10 @@ $string['databasesettingssub_postgres7']='<b>Tüüp:</b> PostgreSQL<br />
 	<b>Nimi:</b> andmebaasi nimi, näiteks moodle<br />
 	<b>Kasutaja:</b> Sinu andmebaasi konto kasutajatunnus<br />
 	<b>Tabelite prefiks:</b> prefiks kasutamaks tabelite nimedes (kohustuslik)';
+$string['databasesettingswillbecreated']='<b>Märkus:</b> Installeerija püüab luua andmebaasi automaatselt, kui seda ei eksisteeri.';
 $string['dataroot']='Andmete kataloog';
 $string['datarooterror']='Sinu määratud andmete kataloogi ei suudetud leida ega luua. Paranda tee või loo ise käsitsi see kataloog.';
+$string['datarootpublicerror']='Sinu määratud andmete kataloog on otse ligipääsetav veebi kaudu. Sa pead valima mingi muu kataloogi.';
 $string['dbconnectionerror']='Me ei suutnud sinu määratud andmebaasi ühendada. Palun kontrolli oma andmebaasi seadistust.';
 $string['dbcreationerror']='Andmebaasi loomise viga. Ei suudetud luua andmebaasi nime olemasolevate seadistustega.';
 $string['dbhost']='Hosti server';
@@ -162,6 +165,7 @@ $string['mysql']='MySQL (mysql)';
 $string['mysql416bypassed']='Kuid, kui Sinu õpikeskkond kasutab AINULT iso-8859-1 (latin) tähestikuga keelt, Sa võid jätkata praegu installeeritud MySQL versiooniga 4.1.12 (või uuem).';
 $string['mysql416required']='MySQL 4.1.16 on minimaalne versioon, mis on nõutud Moodle 1.6 poolt, et tagada kõik andmed saaksid konverteeritud UTF-8 kodeeringusse.';
 $string['mysqlextensionisnotpresentinphp']='PHP ei ole MySQL laiendiga õigesti konfigureeritud, seega ei saa ta MySQL\'ga suhelda. Palun kontrolli oma php.ini faili või kompileeri PHP uuesti.';
+$string['mysqli']='Täiustatud MySQL (mysqli)';
 $string['name']='Nimi';
 $string['next']='Järgmine';
 $string['oci8po']='Oracle (oci8po)';
@@ -211,4 +215,6 @@ $string['wrongsourcebase']='Vale allika URL\'i baas.';
 $string['wrongzipfilename']='Vale ZIP failinimi.'; // ORPHANED
 $string['wwwroot']='Veebiaadress';
 $string['wwwrooterror']='Veebiaadress näib vigane - Moodle installatsiooni ei paista seal olevat.';
+$string['xmlrpcrecommended']='Fakultatiivse xmlrpc laienduse installeerimine on kasulik Moodle Networking funktsionaalsuse jaoks.';
+$string['ziprequired']='Zip PHP laiendus on nüüd Moodle poolt nõutud. Info-ZIP binaare või PclZip teeke ei kasutata enam.';
 ?>

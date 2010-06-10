@@ -20,7 +20,7 @@
 /**
 * includes and requires
 */
-require_once("$CFG->dirroot/search/documents/document.php");
+require_once($CFG->dirroot.'/search/documents/document.php');
 
 /**
 * a class for representing searchable information
@@ -85,7 +85,7 @@ class GlossaryCommentSearchDocument extends SearchDocument {
         $data->glossary = $glossary_id;
         
         // construct the parent class
-        parent::__construct($doc, $data, $course_id, -1, $entry['userid'], PATH_FOR_SEARCH_TYPE_GLOSSARY);
+        parent::__construct($doc, $data, $course_id, -1, $entry['userid'], 'mod/'.SEARCH_TYPE_GLOSSARY);
     } 
 }
   

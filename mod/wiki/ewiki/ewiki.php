@@ -438,27 +438,37 @@
            "url" => "",
 #          "self" => "this",
            "this" => EWIKI_SCRIPT,  # better was absolute _URL to ewiki wrapper
-           "jump" => "",
-       "ErfurtWiki" => "http://erfurtwiki.sourceforge.net/?id=",
-       "InterWiki" => "InterWikiSearch",
-       "InterWikiSearch" => "http://sunir.org/apps/meta.pl?",
-       "Wiki" => "WardsWiki",
-       "WardsWiki" => "http://www.c2.com/cgi/wiki?",
-       "WikiFind" => "http://c2.com/cgi/wiki?FindPage&amp;value=",
-       "WikiPedia" => "http://www.wikipedia.com/wiki.cgi?",
-       "MeatBall" => "MeatballWiki",
-       "MeatballWiki" => "http://www.usemod.com/cgi-bin/mb.pl?",
-       "UseMod"       => "http://www.usemod.com/cgi-bin/wiki.pl?",
-       "PhpWiki" => "http://phpwiki.sourceforge.net/phpwiki/index.php3?",
-       "LinuxWiki" => "http://linuxwiki.de/",
-       "OpenWiki" => "http://openwiki.com/?",
-       "Tavi" => "http://andstuff.org/tavi/",
-       "TWiki" => "http://twiki.sourceforge.net/cgi-bin/view/",
-       "MoinMoin" => "http://www.purl.net/wiki/moin/",
-       "Google" => "http://google.com/search?q=",
-       "ISBN" => "http://www.amazon.com/exec/obidos/ISBN=",
-       "icq" => "http://www.icq.com/",
+           "jump" => ""
     ));
+    // BEGIN MOODLE CHANGES - disable interwiki liks by default
+    // can be enabled with $CFG->wiki_allow_interwiki = true . MDL-19460
+    global $CFG;
+    if (!empty($CFG->wiki_allow_interwiki)) {
+       $ewiki_config["interwiki"] = @array_merge(
+           $ewiki_config["interwiki"],
+           array (
+               "ErfurtWiki" => "http://erfurtwiki.sourceforge.net/?id=",
+               "InterWiki" => "InterWikiSearch",
+               "InterWikiSearch" => "http://sunir.org/apps/meta.pl?",
+               "Wiki" => "WardsWiki",
+               "WardsWiki" => "http://www.c2.com/cgi/wiki?",
+               "WikiFind" => "http://c2.com/cgi/wiki?FindPage&amp;value=",
+               "WikiPedia" => "http://www.wikipedia.com/wiki.cgi?",
+               "MeatBall" => "MeatballWiki",
+               "MeatballWiki" => "http://www.usemod.com/cgi-bin/mb.pl?",
+               "UseMod"       => "http://www.usemod.com/cgi-bin/wiki.pl?",
+               "PhpWiki" => "http://phpwiki.sourceforge.net/phpwiki/index.php3?",
+               "LinuxWiki" => "http://linuxwiki.de/",
+               "OpenWiki" => "http://openwiki.com/?",
+               "Tavi" => "http://andstuff.org/tavi/",
+               "TWiki" => "http://twiki.sourceforge.net/cgi-bin/view/",
+               "MoinMoin" => "http://www.purl.net/wiki/moin/",
+               "Google" => "http://google.com/search?q=",
+               "ISBN" => "http://www.amazon.com/exec/obidos/ISBN=",
+               "icq" => "http://www.icq.com/"
+    ));
+    }
+    // END MOODLE CHANGES
 
 
 
@@ -1065,20 +1075,20 @@ function ewiki_page_ordered_list($orderby="created", $asc=0, $print, $title) {
 
 
 function ewiki_page_newest($id=0, $data=0) {
-   return( ewiki_page_ordered_list("created", 1, "LASTCHANGED", ewiki_t("NEWESTPAGES")) );
+   return( ewiki_page_ordered_list("created", 1, "LASTCHANGED", ewiki_t(EWIKI_PAGE_NEWEST)) );
 }
 
 function ewiki_page_updates($id=0, $data=0) {
-   return( ewiki_page_ordered_list("lastmodified", -1, "LASTCHANGED", EWIKI_PAGE_UPDATES) );
+   return( ewiki_page_ordered_list("lastmodified", -1, "LASTCHANGED", ewiki_t(EWIKI_PAGE_UPDATES)) );
 }
 
 function ewiki_page_hits($id=0, $data=0) {
    ##### BEGIN MOODLE ADDITION #####
-   return( ewiki_page_ordered_list("hits", 1, "hits", EWIKI_PAGE_HITS) );
+   return( ewiki_page_ordered_list("hits", 1, "hits", ewiki_t(EWIKI_PAGE_HITS)) );
 }
 
 function ewiki_page_versions($id=0, $data=0) {
-   return( ewiki_page_ordered_list("version", -1, "changes", EWIKI_PAGE_VERSIONS) );
+   return( ewiki_page_ordered_list("version", -1, "changes", ewiki_t(EWIKI_PAGE_VERSIONS)) );
    ##### END MOODLE ADDITION #####
 }
 
@@ -1261,7 +1271,7 @@ function ewiki_page_info($id, &$data, $action) {
          }
          elseif ($i == "userid") {
              $i = 'author';
-             if ($user = get_record('user', 'id', $value)) {
+             if ($user = get_record('user', 'id', (int)$value)) {
                  if (!isset($course->id)) {
                      $course->id = 1;
                  }

@@ -31,6 +31,10 @@
  * @package course
  *//** */
 
+if (!defined('MOODLE_INTERNAL')) {
+    die('Direct access to this script is forbidden.');    ///  It must be included from a Moodle page
+}
+
 require_once($CFG->libdir.'/formslib.php');
 
 /**
@@ -128,6 +132,7 @@ class reject_request_form extends moodleform {
         $mform =& $this->_form;
 
         $mform->addElement('hidden', 'reject', 0);
+        $mform->setType('reject', PARAM_INT);
 
         $mform->addElement('header','coursedetails', get_string('coursereasonforrejecting'));
 

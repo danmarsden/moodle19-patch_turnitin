@@ -98,6 +98,8 @@ function forum_add_instance($forum) {
  * @return bool success
  */
 function forum_update_instance($forum) {
+    global $USER;
+
     $forum->timemodified = time();
     $forum->id           = $forum->instance;
 
@@ -151,6 +153,7 @@ function forum_update_instance($forum) {
         $post->subject  = $forum->name;
         $post->message  = $forum->intro;
         $post->modified = $forum->timemodified;
+        $post->userid   = $USER->id;    // MDL-18599, so that current teacher can take ownership of activities
 
         if (! update_record('forum_posts', ($post))) {
             error('Could not update the first post');
@@ -943,13 +946,30 @@ function forum_make_mail_html($course, $forum, $discussion, $post, $userfrom, $u
  * @return object A standard object with 2 variables: info (number of posts for this user) and time (last modified)
  */
 function forum_user_outline($course, $user, $mod, $forum) {
-    if ($count = forum_count_user_posts($forum->id, $user->id)) {
-        if ($count->postcount > 0) {
-            $result = new object();
-            $result->info = get_string("numposts", "forum", $count->postcount);
-            $result->time = $count->lastpost;
-            return $result;
+    global $CFG;
+    require_once("$CFG->libdir/gradelib.php");
+    $grades = grade_get_grades($course->id, 'mod', 'forum', $forum->id, $user->id);
+    if (empty($grades->items[0]->grades)) {
+        $grade = false;
+    } else {
+        $grade = reset($grades->items[0]->grades);
+    }
+
+    $count = forum_count_user_posts($forum->id, $user->id);
+
+    if ($count && $count->postcount > 0) {
+        $result = new object();
+        $result->info = get_string("numposts", "forum", $count->postcount);
+        $result->time = $count->lastpost;
+        if ($grade) {
+            $result->info .= ', ' . get_string('grade') . ': ' . $grade->str_long_grade;
         }
+        return $result;
+    } else if ($grade) {
+        $result = new object();
+        $result->info = get_string('grade') . ': ' . $grade->str_long_grade;
+        $result->time = $grade->dategraded;
+        return $result;
     }
     return NULL;
 }
@@ -960,6 +980,16 @@ function forum_user_outline($course, $user, $mod, $forum) {
  */
 function forum_user_complete($course, $user, $mod, $forum) {
     global $CFG,$USER;
+    require_once("$CFG->libdir/gradelib.php");
+
+    $grades = grade_get_grades($course->id, 'mod', 'forum', $forum->id, $user->id);
+    if (!empty($grades->items[0]->grades)) {
+        $grade = reset($grades->items[0]->grades);
+        echo '<p>'.get_string('grade').': '.$grade->str_long_grade.'</p>';
+        if ($grade->str_feedback) {
+            echo '<p>'.get_string('feedback').': '.$grade->str_feedback.'</p>';
+        }
+    }
 
     if ($posts = forum_get_user_posts($forum->id, $user->id)) {
 
@@ -1017,7 +1047,7 @@ function forum_user_complete($course, $user, $mod, $forum) {
  */
 function forum_print_overview($courses,&$htmlarray) {
     global $USER, $CFG;
-    $LIKE = sql_ilike();
+    //$LIKE = sql_ilike();//no longer using like in queries. MDL-20578
 
     if (empty($courses) || !is_array($courses) || count($courses) == 0) {
         return array();
@@ -1037,7 +1067,7 @@ function forum_print_overview($courses,&$htmlarray) {
     }
     $sql = substr($sql,0,-3); // take off the last OR
 
-    $sql .= ") AND l.module = 'forum' AND action $LIKE 'add post%' "
+    $sql .= ") AND l.module = 'forum' AND action = 'add post' "
         ." AND userid != ".$USER->id." GROUP BY cmid,l.course,instance";
 
     if (!$new = get_records_sql($sql)) {
@@ -3401,19 +3431,26 @@ function forum_get_ratings_count($postid, $scale, $ratings=NULL) {
     }
 
     $count = count($ratings);
-    $maxgradeidx = max(array_keys($scale)); // For numerical grades, the index is the same as the real grade value {0..n}
-                                            // and $scale looks like Array( 0 => '0/n', 1 => '1/n', ..., n => 'n/n' )
-                                            // For scales, the index is the order of the scale item {1..n}
-                                            // and $scale looks like Array( 1 => 'poor', 2 => 'weak', 3 => 'good' )
     if (! array_key_exists(0, $scale)) {
         $scaleused = true;
     } else {
         $scaleused = false;
     }
 
-    if (($count == 0) && ($scaleused)) {    // If no rating given yet and we use a scale
-        return get_string('noratinggiven', 'forum');
-    } elseif ($count > $maxgradeidx) {      // The count exceeds the max grade
+    if ($count == 0) {
+        if ($scaleused) {    // If no rating given yet and we use a scale
+            return get_string('noratinggiven', 'forum');
+        } else {
+            return '';
+        }
+    }
+
+    $maxgradeidx = max(array_keys($scale)); // For numerical grades, the index is the same as the real grade value {0..n}
+                                            // and $scale looks like Array( 0 => '0/n', 1 => '1/n', ..., n => 'n/n' )
+                                            // For scales, the index is the order of the scale item {1..n}
+                                            // and $scale looks like Array( 1 => 'poor', 2 => 'weak', 3 => 'good' )
+
+    if ($count > $maxgradeidx) {      // The count exceeds the max grade
         $a = new stdClass();
         $a->count = $count;
         $a->grade = $scale[$maxgradeidx];
@@ -3443,7 +3480,6 @@ function forum_get_ratings_max($postid, $scale, $ratings=NULL) {
     }
 
     $count = count($ratings);
-    $max = max($ratings);
 
     if ($count == 0 ) {
         return "";
@@ -3453,8 +3489,9 @@ function forum_get_ratings_max($postid, $scale, $ratings=NULL) {
         return $scale[$rating];
 
     } else {
+        $max = max($ratings);
 
-     if (isset($scale[$max])) {
+        if (isset($scale[$max])) {
             return $scale[$max]." ($count)";
         } else {
             return "$max ($count)";    // Should never happen, hopefully
@@ -3479,7 +3516,6 @@ function forum_get_ratings_min($postid, $scale,  $ratings=NULL) {
     }
 
     $count = count($ratings);
-    $min = min($ratings);
 
     if ($count == 0 ) {
         return "";
@@ -3489,6 +3525,7 @@ function forum_get_ratings_min($postid, $scale,  $ratings=NULL) {
         return $scale[$rating]; //this works for min
 
     } else {
+        $min = min($ratings);
 
         if (isset($scale[$min])) {
             return $scale[$min]." ($count)";
@@ -3707,7 +3744,12 @@ function forum_file_area_name($post) {
  *
  */
 function forum_file_area($post) {
-    return make_upload_directory( forum_file_area_name($post) );
+    $path = forum_file_area_name($post);
+    if ($path) {
+        return make_upload_directory($path);
+    } else {
+        return false;
+    }
 }
 
 /**
@@ -4991,6 +5033,7 @@ function forum_print_discussion($course, $cm, $forum, $discussion, $post, $mode,
                 echo '<form id="form" method="post" action="rate.php">';
                 echo '<div class="ratingform">';
                 echo '<input type="hidden" name="forumid" value="'.$forum->id.'" />';
+                echo '<input type="hidden" name="sesskey" value="'.sesskey().'" />';
                 $ratingsformused = true;
             }
 

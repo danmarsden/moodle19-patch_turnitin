@@ -16,7 +16,9 @@ class user_editadvanced_form extends moodleform {
 
         /// Add some extra hidden fields
         $mform->addElement('hidden', 'id');
+        $mform->setType('id', PARAM_INT);
         $mform->addElement('hidden', 'course', $COURSE->id);
+        $mform->setType('course', PARAM_INT);
 
         /// Print the required moodle fields first
         $mform->addElement('header', 'moodle', $strgeneral);
@@ -28,12 +30,15 @@ class user_editadvanced_form extends moodleform {
         $modules = get_list_of_plugins('auth');
         $auth_options = array();
         foreach ($modules as $module) {
-            $auth_options[$module] = get_string("auth_$module"."title", "auth");
+            $auth_options[$module] = auth_get_plugin_title ($module);
         }
         $mform->addElement('select', 'auth', get_string('chooseauthmethod','auth'), $auth_options);
         $mform->setHelpButton('auth', array('authchange', get_string('chooseauthmethod','auth')));
         $mform->setAdvanced('auth');
 
+        if (!empty($CFG->passwordpolicy)){
+            $mform->addElement('static', 'passwordpolicyinfo', '', print_password_policy());
+        }
         $mform->addElement('passwordunmask', 'newpassword', get_string('newpassword'), 'size="20"');
         $mform->setHelpButton('newpassword',array('newpassword', get_string('leavetokeep')));
         $mform->setType('newpassword', PARAM_RAW);
@@ -130,7 +135,7 @@ class user_editadvanced_form extends moodleform {
         if (empty($usernew->username)) {
             //might be only whitespace
             $err['username'] = get_string('required');
-        } else if (!$user or $user->username !== $usernew->username) {
+        } else if (!$user or $user->username !== stripslashes($usernew->username)) {
             //check new username does not exist
             if (record_exists('user', 'username', $usernew->username, 'mnethostid', $CFG->mnet_localhost_id)) {
                 $err['username'] = get_string('usernameexists');
@@ -149,7 +154,7 @@ class user_editadvanced_form extends moodleform {
         }
 
         if (!$user or $user->email !== stripslashes($usernew->email)) {
-            if (!validate_email($usernew->email)) {
+            if (!validate_email(stripslashes($usernew->email))) {
                 $err['email'] = get_string('invalidemail');
             } else if (record_exists('user', 'email', $usernew->email, 'mnethostid', $CFG->mnet_localhost_id)) {
                 $err['email'] = get_string('emailexists');

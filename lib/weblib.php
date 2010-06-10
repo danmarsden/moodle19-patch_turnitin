@@ -119,7 +119,7 @@ $ALLOWED_PROTOCOLS = array('http', 'https', 'ftp', 'news', 'mailto', 'rtsp', 'te
  */
 function s($var, $strip=false) {
 
-    if ($var == '0') {  // for integer 0, boolean false, string '0'
+    if ($var === '0' or $var === false or $var === 0) {
         return '0';
     }
 
@@ -338,14 +338,21 @@ class moodle_url {
             $this->params($params);
         }
     }
+
     /**
-     * Add an array of params to the params for this page. The added params override existing ones if they
-     * have the same name.
+     * Add an array of params to the params for this page. 
      *
-     * @param array $params
+     * The added params override existing ones if they have the same name.
+     *
+     * @param array $params Defaults to null. If null then return value of param 'name'.
+     * @return array Array of Params for url.
      */
-    function params($params){
-        $this->params = $params + $this->params;
+    function params($params = null) {
+        if (!is_null($params)) {
+            return $this->params = $params + $this->params;
+        } else {
+            return $this->params;
+        }
     }
 
     /**
@@ -762,7 +769,7 @@ function element_to_popup_window ($type=null, $url=null, $name=null, $linkname=n
                 $url = substr($url, strlen($CFG->wwwroot));
             }
             $element = '<a title="'. s(strip_tags($title)) .'" href="'. $CFG->wwwroot . $url .'" '.
-                       "onclick=\"this.target='$name'; return openpopup('$url', '$name', '$options', $fullscreen);\">$linkname</a>";
+                       "$CFG->frametarget onclick=\"this.target='$name'; return openpopup('$url', '$name', '$options', $fullscreen);\">$linkname</a>";
             break;
         default :
             error('Undefined element - can\'t create popup window.');
@@ -1000,8 +1007,7 @@ function choose_from_menu_nested($options,$name,$selected='',$nothing='choose',$
     }
     if (!empty($options)) {
         foreach ($options as $section => $values) {
-
-            $output .= '   <optgroup label="'. s(format_string($section)) .'">'."\n";
+            $output .= '   <optgroup label="'. s(strip_tags(format_string($section))) .'">'."\n";
             foreach ($values as $value => $label) {
                 $output .= '   <option value="'. format_string($value) .'"';
                 if ((string)$value == (string)$selected) {
@@ -2013,11 +2019,12 @@ function clean_text($text, $format=FORMAT_MOODLE) {
         default:
 
             if (!empty($CFG->enablehtmlpurifier)) {
+                //this is PHP5 only, the lib/setup.php contains a disabler for PHP4
                 $text = purify_html($text);
             } else {
             /// Fix non standard entity notations
-                $text = preg_replace('/(&#[0-9]+)(;?)/', "\\1;", $text);
-                $text = preg_replace('/(&#x[0-9a-fA-F]+)(;?)/', "\\1;", $text);
+                $text = preg_replace('/&#0*([0-9]+);?/', "&#\\1;", $text);
+                $text = preg_replace('/&#x0*([0-9a-fA-F]+);?/', "&#x\\1;", $text);
 
             /// Remove tags that are not allowed
                 $text = strip_tags($text, $ALLOWED_TAGS);
@@ -2040,24 +2047,29 @@ function clean_text($text, $format=FORMAT_MOODLE) {
 
 /**
  * KSES replacement cleaning function - uses HTML Purifier.
+ *
+ * @global object
+ * @param string $text The (X)HTML string to purify
  */
 function purify_html($text) {
     global $CFG;
 
     // this can not be done only once because we sometimes need to reset the cache
-    $cachedir = $CFG->dataroot.'/cache/htmlpurifier/';
+    $cachedir = $CFG->dataroot.'/cache/htmlpurifier';
     $status = check_dir_exists($cachedir, true, true);
 
     static $purifier = false;
+    static $config;
     if ($purifier === false) {
-        require_once $CFG->libdir.'/htmlpurifier/HTMLPurifier.auto.php';
+        require_once $CFG->libdir.'/htmlpurifier/HTMLPurifier.safe-includes.php';
         $config = HTMLPurifier_Config::createDefault();
-        $config->set('Core', 'AcceptFullDocuments', false);
-        $config->set('Core', 'Encoding', 'UTF-8');
-        $config->set('HTML', 'Doctype', 'XHTML 1.0 Transitional');
-        $config->set('Cache', 'SerializerPath', $cachedir);
-        $config->set('URI', 'AllowedSchemes', array('http'=>1, 'https'=>1, 'ftp'=>1, 'irc'=>1, 'nntp'=>1, 'news'=>1, 'rtsp'=>1, 'teamspeak'=>1, 'gopher'=>1, 'mms'=>1));
-        $config->set('Attr', 'AllowedFrameTargets', array('_blank'));
+        $config->set('Output.Newline', "\n");
+        $config->set('Core.ConvertDocumentToFragment', true);
+        $config->set('Core.Encoding', 'UTF-8');
+        $config->set('HTML.Doctype', 'XHTML 1.0 Transitional');
+        $config->set('Cache.SerializerPath', $cachedir);
+        $config->set('URI.AllowedSchemes', array('http'=>1, 'https'=>1, 'ftp'=>1, 'irc'=>1, 'nntp'=>1, 'news'=>1, 'rtsp'=>1, 'teamspeak'=>1, 'gopher'=>1, 'mms'=>1));
+        $config->set('Attr.AllowedFrameTargets', array('_blank'));
         $purifier = new HTMLPurifier($config);
     }
     return $purifier->purify($text);
@@ -2127,6 +2139,7 @@ function cleanAttributes2($htmlArray){
                 }
             }
             $arreach['value'] = preg_replace("/j\s*a\s*v\s*a\s*s\s*c\s*r\s*i\s*p\s*t/i", "Xjavascript", $arreach['value']);
+            $arreach['value'] = preg_replace("/v\s*b\s*s\s*c\s*r\s*i\s*p\s*t/i", "Xvbscript", $arreach['value']);
             $arreach['value'] = preg_replace("/e\s*x\s*p\s*r\s*e\s*s\s*s\s*i\s*o\s*n/i", "Xexpression", $arreach['value']);
             $arreach['value'] = preg_replace("/b\s*i\s*n\s*d\s*i\s*n\s*g/i", "Xbinding", $arreach['value']);
         } else if ($arreach['name'] == 'href') {
@@ -2288,9 +2301,6 @@ function html_to_text($html) {
     $h2t = new html2text($html);
     $result = $h2t->get_text();
 
-    // html2text does not fix HTML entities so handle those here.
-    $result = html_entity_decode($result, ENT_NOQUOTES, 'UTF-8');
-
     return $result;
 }
 
@@ -2300,13 +2310,44 @@ function html_to_text($html) {
  * @param string $text Passed in by reference. The string to be searched for urls.
  */
 function convert_urls_into_links(&$text) {
-/// Make lone URLs into links.   eg http://moodle.com/
-    $text = eregi_replace("([[:space:]]|^|\(|\[)([[:alnum:]]+)://([^[:space:]]*)([[:alnum:]#?/&=])",
-                          "\\1<a href=\"\\2://\\3\\4\" target=\"_blank\">\\2://\\3\\4</a>", $text);
+    //I've added img tags to this list of tags to ignore.
+    //See MDL-21168 for more info. A better way to ignore tags whether or not
+    //they are escaped partially or completely would be desirable. For example:
+    //<a href="blah">
+    //&lt;a href="blah"&gt;
+    //&lt;a href="blah">
+    $filterignoretagsopen  = array('<a\s[^>]+?>');
+    $filterignoretagsclose = array('</a>');
+    filter_save_ignore_tags($text,$filterignoretagsopen,$filterignoretagsclose,$ignoretags);
 
-/// eg www.moodle.com
-    $text = eregi_replace("([[:space:]]|^|\(|\[)www\.([^[:space:]]*)([[:alnum:]#?/&=])",
-                          "\\1<a href=\"http://www.\\2\\3\" target=\"_blank\">www.\\2\\3</a>", $text);
+    // Check if we support unicode modifiers in regular expressions. Cache it.
+    // TODO: this check should be a environment requirement in Moodle 2.0, as far as unicode
+    // chars are going to arrive to URLs officially really soon (2010?)
+    // Original RFC regex from: http://www.bytemycode.com/snippets/snippet/796/
+    // Various ideas from: http://alanstorm.com/url_regex_explained
+    // Unicode check, negative assertion and other bits from Moodle.
+    static $unicoderegexp;
+    if (!isset($unicoderegexp)) {
+        $unicoderegexp = @preg_match('/\pL/u', 'a'); // This will fail silenty, returning false,
+    }
+
+    $unicoderegexp = false;//force non use of unicode modifiers. MDL-21296
+    if ($unicoderegexp) { //We can use unicode modifiers
+        $text = preg_replace('#(?<!=["\'])(((http(s?))://)(((([\pLl0-9]([\pLl0-9]|-)*[\pLl0-9]|[\pLl0-9])\.)+([\pLl]([\pLl0-9]|-)*[\pLl0-9]|[\pLl]))|(([0-9]{1,3}\.){3}[0-9]{1,3}))(:[\pL0-9]*)?(/([\pLl0-9\.!$&\'\(\)*+,;=_~:@-]|%[a-fA-F0-9]{2})*)*(\?([\pLl0-9\.!$&\'\(\)*+,;=_~:@/?-]|%[a-fA-F0-9]{2})*)?(\#[\pLl0-9\.!$&\'\(\)*+,;=_~:@/?-]*)?)(?<![,\.;])#iu',
+                             '<a href="\\1" target="_blank">\\1</a>', $text);
+        $text = preg_replace('#(?<!=["\']|//)((www\.([\pLl0-9]([\pLl0-9]|-)*[\pLl0-9]|[\pLl0-9])\.)+([\pLl]([\pLl0-9]|-)*[\pLl0-9]|[\pLl])(:[\pL0-9]*)?(/([\pLl0-9\.!$&\'\(\)*+,;=_~:@-]|%[a-fA-F0-9]{2})*)*(\?([\pLl0-9\.!$&\'\(\)*+,;=_~:@/?-]|%[a-fA-F0-9]{2})*)?(\#[\pLl0-9\.!$&\'\(\)*+,;=_~:@/?-]*)?)(?<![,\.;])#iu',
+                             '<a href="http://\\1" target="_blank">\\1</a>', $text);
+    } else { //We cannot use unicode modifiers
+        $text = preg_replace('#(?<!=["\'])(((http(s?))://)(((([a-z0-9]([a-z0-9]|-)*[a-z0-9]|[a-z0-9])\.)+([a-z]([a-z0-9]|-)*[a-z0-9]|[a-z]))|(([0-9]{1,3}\.){3}[0-9]{1,3}))(:[a-zA-Z0-9]*)?(/([a-z0-9\.!$&\'\(\)*+,;=_~:@-]|%[a-f0-9]{2})*)*(\?([a-z0-9\.!$&\'\(\)*+,;=_~:@/?-]|%[a-fA-F0-9]{2})*)?(\#[a-z0-9\.!$&\'\(\)*+,;=_~:@/?-]*)?)(?<![,\.;])#i',
+                             '<a href="\\1" target="_blank">\\1</a>', $text);
+        $text = preg_replace('#(?<!=["\']|//)((www\.([a-z0-9]([a-z0-9]|-)*[a-z0-9]|[a-z0-9])\.)+([a-z]([a-z0-9]|-)*[a-z0-9]|[a-z])(:[a-zA-Z0-9]*)?(/([a-z0-9\.!$&\'\(\)*+,;=_~:@-]|%[a-f0-9]{2})*)*(\?([a-z0-9\.!$&\'\(\)*+,;=_~:@/?-]|%[a-fA-F0-9]{2})*)?(\#[a-z0-9\.!$&\'\(\)*+,;=_~:@/?-]*)?)(?<![,\.;])#i',
+                             '<a href="http://\\1" target="_blank">\\1</a>', $text);
+    }
+
+    if (!empty($ignoretags)) {
+        $ignoretags = array_reverse($ignoretags); /// Reversed so "progressive" str_replace() will solve some nesting problems.
+        $text = str_replace(array_keys($ignoretags),$ignoretags,$text);
+    }
 }
 
 /**
@@ -2475,6 +2516,23 @@ function print_header ($title='', $heading='', $navigation='', $focus='',
         return;
     }
     define('HEADER_PRINTED', 'true');
+
+/// Perform a browser environment check for the flash version.  Should only run once per login session.
+    if (isloggedin() && !empty($CFG->excludeoldflashclients) && empty($SESSION->flashversion)) {
+        // Unfortunately we can't use require_js here and keep it all clean in 1.9 ...
+        // require_js(array('yui_yahoo', 'yui_event', 'yui_connection', $CFG->httpswwwroot."/lib/swfobject/swfobject.js"));
+        $meta .= '<script type="text/javascript"  src="'.$CFG->httpswwwroot.'/lib/yui/yahoo/yahoo-min.js"></script>';
+        $meta .= '<script type="text/javascript"  src="'.$CFG->httpswwwroot.'/lib/yui/event/event-min.js"></script>';
+        $meta .= '<script type="text/javascript"  src="'.$CFG->httpswwwroot.'/lib/yui/connection/connection-min.js"></script>';
+        $meta .= '<script type="text/javascript"  src="'.$CFG->httpswwwroot.'/lib/swfobject/swfobject.js"></script>';
+        $meta .= 
+           "<script type=\"text/javascript\">\n".
+           "//<![CDATA[\n".
+           "  var flashversion = swfobject.getFlashPlayerVersion();\n".
+           "  YAHOO.util.Connect.asyncRequest('GET','".$CFG->httpswwwroot."/login/environment.php?sesskey=".sesskey()."&flashversion='+flashversion.major+'.'+flashversion.minor+'.'+flashversion.release);\n".
+           "//]]>\n".
+           "</script>";
+    }
 
 
 /// Add the required stylesheets
@@ -2959,7 +3017,7 @@ function print_footer($course=NULL, $usercourse=NULL, $return=false) {
         } else if ($course === 'home') {   // special case for site home page - please do not remove
             $course = get_site();
             $homelink  = '<div class="sitelink">'.
-               '<a title="Moodle '. $CFG->release .'" href="http://moodle.org/">'.
+               '<a title="Moodle" href="http://moodle.org/">'.
                '<img style="width:100px;height:30px" src="pix/moodlelogo.gif" alt="moodlelogo" /></a></div>';
             $home  = true;
 
@@ -3479,7 +3537,8 @@ function user_login_string($course=NULL, $user=NULL) {
         } else if (!empty($user->access['rsw'][$context->path])) {
             $rolename = '';
             if ($role = get_record('role', 'id', $user->access['rsw'][$context->path])) {
-                $rolename = ': '.format_string($role->name);
+                $rolename = join("", role_fix_names(array($role->id=>$role->name), $context));
+                $rolename = ': '.format_string($rolename);
             }
             $loggedinas = get_string('loggedinas', 'moodle', $username).$rolename.
                       " (<a $CFG->frametarget
@@ -3861,12 +3920,16 @@ function build_navigation($extranavlinks, $cm = null) {
         if (!empty($navlink['type']) && $navlink['type'] == 'activity' && !$last && $hideactivitylink) {
             continue;
         }
-        $navigation .= '<li class="first">';
+        if ($first) {
+            $navigation .= '<li class="first">';
+        } else {
+            $navigation .= '<li>';
+        }
         if (!$first) {
             $navigation .= get_separator();
         }
         if ((!empty($navlink['link'])) && !$last) {
-            $navigation .= "<a onclick=\"this.target='$CFG->framename'\" href=\"{$navlink['link']}\">";
+            $navigation .= "<a $CFG->frametarget onclick=\"this.target='$CFG->framename'\" href=\"{$navlink['link']}\">";
         }
         $navigation .= "{$navlink['name']}";
         if ((!empty($navlink['link'])) && !$last) {
@@ -4639,6 +4702,12 @@ function print_group_picture($group, $courseid, $large=false, $return=false, $li
 
     $context = get_context_instance(CONTEXT_COURSE, $courseid);
 
+    // If there is no picture, do nothing
+    if (!$group->picture) {
+        return '';
+    }
+
+    // If picture is hidden, only show to those with course:managegroups
     if ($group->hidepicture and !has_capability('moodle/course:managegroups', $context)) {
         return '';
     }
@@ -4653,12 +4722,13 @@ function print_group_picture($group, $courseid, $large=false, $return=false, $li
     } else {
         $file = 'f2';
     }
-    if ($group->picture) {  // Print custom group picture
-        require_once($CFG->libdir.'/filelib.php');
-        $grouppictureurl = get_file_url($group->id.'/'.$file.'.jpg', null, 'usergroup');
-        $output .= '<img class="grouppicture" src="'.$grouppictureurl.'"'.
-            ' alt="'.s(get_string('group').' '.$group->name).'" title="'.s($group->name).'"/>';
-    }
+    
+    // Print custom group picture
+    require_once($CFG->libdir.'/filelib.php');
+    $grouppictureurl = get_file_url($group->id.'/'.$file.'.jpg', null, 'usergroup');
+    $output .= '<img class="grouppicture" src="'.$grouppictureurl.'"'.
+        ' alt="'.s(get_string('group').' '.$group->name).'" title="'.s($group->name).'"/>';
+
     if ($link or has_capability('moodle/site:accessallgroups', $context)) {
         $output .= '</a>';
     }
@@ -4936,7 +5006,7 @@ function print_textarea($usehtmleditor, $rows, $cols, $width, $height, $name, $v
 
             }
             $str .= ($scriptcount < 1) ? '<script type="text/javascript" src="'.
-                    $CFG->httpswwwroot .'/lib/editor/htmlarea/lang/en.php"></script>'."\n" : '';
+                    $CFG->httpswwwroot .'/lib/editor/htmlarea/lang/en.php?id='.$courseid.'"></script>'."\n" : '';
             $scriptcount++;
 
             if ($height) {    // Usually with legacy calls
@@ -5374,7 +5444,7 @@ function navmenu($course, $cm=NULL, $targetwindow='self') {
     if ($selectmod and has_capability('coursereport/log:view', $context)) {
         $logstext = get_string('alllogs');
         $logslink = '<li>'."\n".'<a title="'.$logstext.'" '.
-                    $CFG->frametarget.'onclick="this.target=\''.$CFG->framename.'\';"'.' href="'.
+                    $CFG->frametarget.' onclick="this.target=\''.$CFG->framename.'\';"'.' href="'.
                     $CFG->wwwroot.'/course/report/log/index.php?chooselog=1&amp;user=0&amp;date=0&amp;id='.
                        $course->id.'&amp;modid='.$selectmod->id.'">'.
                     '<img class="icon log" src="'.$CFG->pixpath.'/i/log.gif" alt="'.$logstext.'" /></a>'."\n".'</li>';
@@ -5382,7 +5452,7 @@ function navmenu($course, $cm=NULL, $targetwindow='self') {
     }
     if ($backmod) {
         $backtext= get_string('activityprev', 'access');
-        $backmod = '<li><form action="'.$CFG->wwwroot.'/mod/'.$backmod->modname.'/view.php" '.
+        $backmod = '<li><form action="'.$CFG->wwwroot.'/mod/'.$backmod->modname.'/view.php" '.$CFG->frametarget.' '.
                    'onclick="this.target=\''.$CFG->framename.'\';"'.'><fieldset class="invisiblefieldset">'.
                    '<input type="hidden" name="id" value="'.$backmod->id.'" />'.
                    '<button type="submit" title="'.$backtext.'">'.link_arrow_left($backtext, $url='', $accesshide=true).
@@ -5390,7 +5460,7 @@ function navmenu($course, $cm=NULL, $targetwindow='self') {
     }
     if ($nextmod) {
         $nexttext= get_string('activitynext', 'access');
-        $nextmod = '<li><form action="'.$CFG->wwwroot.'/mod/'.$nextmod->modname.'/view.php"  '.
+        $nextmod = '<li><form action="'.$CFG->wwwroot.'/mod/'.$nextmod->modname.'/view.php"  '.$CFG->frametarget.' '.
                    'onclick="this.target=\''.$CFG->framename.'\';"'.'><fieldset class="invisiblefieldset">'.
                    '<input type="hidden" name="id" value="'.$nextmod->id.'" />'.
                    '<button type="submit" title="'.$nexttext.'">'.link_arrow_right($nexttext, $url='', $accesshide=true).
@@ -6164,7 +6234,7 @@ function redirect($url, $message='', $delay=-1) {
 <script type="text/javascript">
 //<![CDATA[
 
-  function redirect() {
+  function redirect() { 
       document.location.replace('<?php echo addslashes_js($url) ?>');
   }
   setTimeout("redirect()", <?php echo ($delay * 1000) ?>);
@@ -6214,8 +6284,8 @@ function notify($message, $style='notifyproblem', $align='center', $return=false
     $length = strlen($email);
     $obfuscated = '';
     while ($i < $length) {
-        if (rand(0,2)) {
-            $obfuscated.='%'.dechex(ord($email{$i}));
+        if (rand(0,2) && $email{$i}!='@') { //MDL-20619 some browsers have problems unobfuscating @
+                $obfuscated.='%'.dechex(ord($email{$i}));
         } else {
             $obfuscated.=$email{$i};
         }
@@ -6399,16 +6469,12 @@ function print_side_block($heading='', $content='', $list=NULL, $icons=NULL, $fo
     //Accessibility: skip block link, with title-text (or $block_id) to differentiate links.
     static $block_id = 0;
     $block_id++;
-    if (empty($heading)) {
-        $skip_text = get_string('skipblock', 'access').' '.$block_id;
-    }
-    else {
-        $skip_text = get_string('skipa', 'access', strip_tags($title));
-    }
+    $skip_text = get_string('skipa', 'access', strip_tags($title));
     $skip_link = '<a href="#sb-'.$block_id.'" class="skip-block">'.$skip_text.'</a>';
     $skip_dest = '<span id="sb-'.$block_id.'" class="skip-block-to"></span>';
 
-    if (! empty($heading)) {
+    $strip_title = strip_tags($title);
+    if (! empty($strip_title)) {
         echo $skip_link;
     }
     //ELSE: a single link on a page "Skip block 4" is too confusing - ignore.
@@ -6424,13 +6490,13 @@ function print_side_block($heading='', $content='', $list=NULL, $icons=NULL, $fo
         if ($list) {
             $row = 0;
             //Accessibility: replaced unnecessary table with list, see themes/standard/styles_layout.css
-            echo "\n<ul class='list'>\n";
-            foreach ($list as $key => $string) {
+            echo "\n<ul class='list'>\n";            
+            foreach ($list as $key => $string) {                
                 echo '<li class="r'. $row .'">';
                 if ($icons) {
-                    echo '<div class="icon column c0">'. $icons[$key] .'</div>';
+                   echo '<div class="icon column c0">'. $icons[$key] .'</div>';
                 }
-                echo '<div class="column c1">'. $string .'</div>';
+                echo '<div class="column c1">' . $string . '</div>';
                 echo "</li>\n";
                 $row = $row ? 0:1;
             }
@@ -6465,7 +6531,7 @@ function print_side_block_start($heading='', $attributes = array()) {
         $attributes['class'] = 'sideblock';
 
     } else if(!strpos($attributes['class'], 'sideblock')) {
-        $attributes['class'] .= ' sideblock';
+        $attributes['class'] .= ' sideblock';        
     }
 
     // OK, the class is surely there and in addition to anything
@@ -6637,7 +6703,7 @@ function print_maintenance_message () {
     print_header(strip_tags($SITE->fullname), $SITE->fullname, 'home');
     print_box_start();
     print_heading(get_string('sitemaintenance', 'admin'));
-    @include($CFG->dataroot.'/1/maintenance.html');
+    @include($CFG->dataroot.'/'.SITEID.'/maintenance.html');
     print_box_end();
     print_footer();
 }
@@ -7081,6 +7147,50 @@ function is_in_popup() {
     return ($inpopup);
 }
 
+/**
+ * Return the authentication plugin title
+ * @param string $authtype plugin type
+ * @return string
+ */
+function auth_get_plugin_title ($authtype) {
+    $authtitle = get_string("auth_{$authtype}title", "auth");
+    if ($authtitle == "[[auth_{$authtype}title]]") {
+        $authtitle = get_string("auth_{$authtype}title", "auth_{$authtype}");
+    }
+    return $authtitle;
+}
 
-// vim:autoindent:expandtab:shiftwidth=4:tabstop=4:tw=140:
+/**
+ * Returns a localized sentence in the current language summarizing the current password policy
+ *
+ * @uses $CFG
+ * @return string
+ */
+function print_password_policy() {
+    global $CFG;
+
+    $message = '';
+    if (!empty($CFG->passwordpolicy)) {
+        $messages = array();
+        $messages[] = get_string('informminpasswordlength', 'auth', $CFG->minpasswordlength);
+        if (!empty($CFG->minpassworddigits)) {
+            $messages[] = get_string('informminpassworddigits', 'auth', $CFG->minpassworddigits);
+        }
+        if (!empty($CFG->minpasswordlower)) {
+            $messages[] = get_string('informminpasswordlower', 'auth', $CFG->minpasswordlower);
+        }
+        if (!empty($CFG->minpasswordupper)) {
+            $messages[] = get_string('informminpasswordupper', 'auth', $CFG->minpasswordupper);
+        }
+        if (!empty($CFG->minpasswordnonalphanum)) {
+            $messages[] = get_string('informminpasswordnonalphanum', 'auth', $CFG->minpasswordnonalphanum);
+        }
+
+        $messages = join(', ', $messages); // this is ugly but we do not have anything better yet...
+        $message = get_string('informpasswordpolicy', 'auth', $messages);
+    }
+    return $message;
+}
+
+ // vim:autoindent:expandtab:shiftwidth=4:tabstop=4:tw=140:
 ?>

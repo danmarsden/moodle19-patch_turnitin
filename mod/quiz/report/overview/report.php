@@ -21,27 +21,12 @@ class quiz_report extends quiz_default_report {
         // Define some strings
         $strreallydel  = addslashes(get_string('deleteattemptcheck','quiz'));
         $strtimeformat = get_string('strftimedatetime');
-        $strreviewquestion = get_string('reviewresponse', 'quiz');
 
         $context = get_context_instance(CONTEXT_MODULE, $cm->id);
 
         // Only print headers if not asked to download data
         if (!$download = optional_param('download', NULL)) {
             $this->print_header_and_tabs($cm, $course, $quiz, "overview");
-        }
-
-        if($attemptids = optional_param('attemptid', array(), PARAM_INT)) {
-            //attempts need to be deleted
-            require_capability('mod/quiz:deleteattempts', $context);
-            $attemptids = optional_param('attemptid', array(), PARAM_INT);
-            foreach($attemptids as $attemptid) {
-                add_to_log($course->id, 'quiz', 'delete attempt', 'report.php?id=' . $cm->id,
-                        $attemptid, $cm->id);
-                quiz_delete_attempt($attemptid, $quiz);
-            }
-            //No need for a redirect, any attemptids that do not exist are ignored.
-            //So no problem if the user refreshes and tries to delete the same attempts
-            //twice.
         }
 
         // Work out some display options - whether there is feedback, and whether scores should be shown.
@@ -119,7 +104,7 @@ class quiz_report extends quiz_default_report {
             }
         }
         $nostudents = false;
-        if (!$students = get_users_by_capability($context, array('mod/quiz:reviewmyattempts', 'mod/quiz:attempt'),'','','','','','',false)){
+        if (!$students = get_users_by_capability($context, array('mod/quiz:reviewmyattempts', 'mod/quiz:attempt'),'id,1','','','','','',false)){
             notify(get_string('nostudentsyet'));
             $nostudents = true;
             $studentslist = '';
@@ -130,16 +115,34 @@ class quiz_report extends quiz_default_report {
         if (empty($currentgroup)) {
             // all users who can attempt quizzes
             $groupstudentslist = '';
+            $groupstudents = array();
             $allowedlist = $studentslist;
         } else {
             // all users who can attempt quizzes and who are in the currently selected group
-            if (!$groupstudents = get_users_by_capability($context, 'mod/quiz:attempt','','','','',$currentgroup,'',false)){
+            if (!$groupstudents = get_users_by_capability($context, array('mod/quiz:reviewmyattempts', 'mod/quiz:attempt'),'id,1','','','',$currentgroup,'',false)){
                 notify(get_string('nostudentsingroup'));
                 $nostudents = true;
                 $groupstudents = array();
             }
             $groupstudentslist = join(',', array_keys($groupstudents));
             $allowedlist = $groupstudentslist;
+        }
+
+        if ($students && ($attemptids = optional_param('attemptid', array(), PARAM_INT)) && confirm_sesskey()) {
+            //attempts need to be deleted
+            require_capability('mod/quiz:deleteattempts', $context);
+            foreach ($attemptids as $attemptid) {
+                $attempt = get_record('quiz_attempts', 'id', $attemptid);
+                if ($groupstudents && !in_array($attempt->userid, $groupstudents)) {
+                    continue;
+                }
+                add_to_log($course->id, 'quiz', 'delete attempt', 'report.php?id=' . $cm->id,
+                        $attemptid, $cm->id);
+                quiz_delete_attempt($attempt, $quiz);
+            }
+            //No need for a redirect, any attemptids that do not exist are ignored.
+            //So no problem if the user refreshes and tries to delete the same attempts
+            //twice.
         }
 
         if (!$nostudents || ($attemptsmode == QUIZ_REPORT_ATTEMPTS_ALL)){
@@ -201,6 +204,7 @@ class quiz_report extends quiz_default_report {
                     // Ignore questions of zero length
                     $columns[] = 'qsgrade'.$id;
                     $headers[] = '#'.$question->number;
+                    $question->formattedname = strip_tags(format_string($question->name));
                 }
             }
     
@@ -466,10 +470,10 @@ class quiz_report extends quiz_default_report {
                     }
                     if (!$download){
                         $userlink = '<a href="'.$CFG->wwwroot.'/user/view.php?id='.$attempt->userid.
-                                '&amp;course='.$course->id.'">'.fullname($attempt).'</a>';
+                                '&amp;course='.$course->id.'">'.fullname($attempt,has_capability('moodle/site:viewfullnames', $context)).'</a>';
                         $row[] = $userlink;
                     } else {
-                        $row[] = fullname($attempt);
+                        $row[] = fullname($attempt, has_capability('moodle/site:viewfullnames', $context));
                     }
                     
                     if (in_array('idnumber', $columns)){
@@ -539,7 +543,7 @@ class quiz_report extends quiz_default_report {
                                     $grade = $grade.'/'.quiz_rescale_grade($question->grade, $quiz);
                                     $row[] = link_to_popup_window('/mod/quiz/reviewquestion.php?state='.
                                             $stateforqinattempt->id.'&amp;number='.$question->number,
-                                            'reviewquestion', $grade, 450, 650, $strreviewquestion, 'none', true);
+                                            'reviewquestion', $grade, 450, 650, get_string('reviewresponsetoq', 'quiz', $question->formattedname), 'none', true);
                                 } else {
                                     $row[] = $grade;
                                 }
@@ -584,7 +588,7 @@ class quiz_report extends quiz_default_report {
                         $groupaveragerow = array('fullname' => get_string('groupavg', 'grades'),
                                 'sumgrades' => round($groupaverage->grade, $quiz->decimalpoints),
                                 'feedbacktext'=> quiz_report_feedback_for_grade($groupaverage->grade, $quiz->id));
-                        if($detailedmarks && $qmsubselect) {
+                        if($detailedmarks && ($qmsubselect || $quiz->attempts == 1)) {
                             $avggradebyq = quiz_get_average_grade_for_questions($quiz, $groupstudentslist);
                             $groupaveragerow += quiz_format_average_grade_for_questions($avggradebyq, $questions, $quiz, $download);
                         }
@@ -594,7 +598,7 @@ class quiz_report extends quiz_default_report {
                     $overallaveragerow = array('fullname' => get_string('overallaverage', 'grades'),
                                 'sumgrades' => round($overallaverage->grade, $quiz->decimalpoints),
                                 'feedbacktext'=> quiz_report_feedback_for_grade($overallaverage->grade, $quiz->id));
-                    if($detailedmarks && $qmsubselect) {
+                    if($detailedmarks && ($qmsubselect || $quiz->attempts == 1)) {
                         $avggradebyq = quiz_get_average_grade_for_questions($quiz, $studentslist);
                         $overallaveragerow += quiz_format_average_grade_for_questions($avggradebyq, $questions, $quiz, $download);
                     }
@@ -607,6 +611,7 @@ class quiz_report extends quiz_default_report {
                             '" onsubmit="return confirm(\''.$strreallydel.'\');">';
                     echo '<div style="display: none;">';
                     echo $reporturlwithdisplayoptions->hidden_params_out();
+                    echo '<input type="hidden" name="sesskey" value="' . sesskey() . '">';
                     echo '</div>';
                     echo '<div>';
     

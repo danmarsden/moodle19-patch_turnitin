@@ -1,27 +1,23 @@
-<?php  //$Id$
+<?php
 
-///////////////////////////////////////////////////////////////////////////
-//                                                                       //
-// NOTICE OF COPYRIGHT                                                   //
-//                                                                       //
-// Moodle - Modular Object-Oriented Dynamic Learning Environment         //
-//          http://moodle.com                                            //
-//                                                                       //
-// Copyright (C) 1999 onwards  Martin Dougiamas  http://moodle.com       //
-//                                                                       //
-// This program is free software; you can redistribute it and/or modify  //
-// it under the terms of the GNU General Public License as published by  //
-// the Free Software Foundation; either version 2 of the License, or     //
-// (at your option) any later version.                                   //
-//                                                                       //
-// This program is distributed in the hope that it will be useful,       //
-// but WITHOUT ANY WARRANTY; without even the implied warranty of        //
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         //
-// GNU General Public License for more details:                          //
-//                                                                       //
-//          http://www.gnu.org/copyleft/gpl.html                         //
-//                                                                       //
-///////////////////////////////////////////////////////////////////////////
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+if (!defined('MOODLE_INTERNAL')) {
+    die('Direct access to this script is forbidden.');    ///  It must be included from a Moodle page
+}
 
 require_once $CFG->libdir.'/formslib.php';
 
@@ -34,6 +30,15 @@ class edit_grade_form extends moodleform {
 
         $grade_item = $this->_customdata['grade_item'];
         $gpr        = $this->_customdata['gpr'];
+
+        if ($grade_item->is_course_item()) {
+            $grade_category = null;
+        } else if ($grade_item->is_category_item()) {
+            $grade_category = $grade_item->get_item_category();
+            $grade_category = $grade_category->get_parent_category();
+        } else {
+            $grade_category = $grade_item->get_parent_category();
+        }
 
         /// information fields
         $mform->addElement('static', 'user', get_string('user'));
@@ -72,7 +77,11 @@ class edit_grade_form extends moodleform {
             $mform->disabledIf('finalgrade', 'overridden', 'notchecked');
         }
 
-        $mform->addElement('advcheckbox', 'excluded', get_string('excluded', 'grades'));
+        if ($grade_category and $grade_category->aggregation == GRADE_AGGREGATE_SUM) {
+            $mform->addElement('advcheckbox', 'excluded', get_string('excluded', 'grades'), '<small>('.get_string('warningexcludedsum', 'grades').')</small>');
+        } else {
+            $mform->addElement('advcheckbox', 'excluded', get_string('excluded', 'grades'));
+        }
         $mform->setHelpButton('excluded', array('excluded', get_string('excluded', 'grades'), 'grade'));
 
         /// hiding
@@ -101,7 +110,9 @@ class edit_grade_form extends moodleform {
 
         // hidden params
         $mform->addElement('hidden', 'oldgrade');
+        $mform->setType('oldgrade', PARAM_RAW);
         $mform->addElement('hidden', 'oldfeedback');
+        $mform->setType('oldfeedback', PARAM_RAW);
 
         $mform->addElement('hidden', 'id', 0);
         $mform->setType('id', PARAM_INT);

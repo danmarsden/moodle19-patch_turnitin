@@ -1,27 +1,19 @@
-<?php  // $Id$
+<?php
 
-///////////////////////////////////////////////////////////////////////////
-//                                                                       //
-// NOTICE OF COPYRIGHT                                                   //
-//                                                                       //
-// Moodle - Modular Object-Oriented Dynamic Learning Environment         //
-//          http://moodle.com                                            //
-//                                                                       //
-// Copyright (C) 1999 onwards  Martin Dougiamas  http://moodle.com       //
-//                                                                       //
-// This program is free software; you can redistribute it and/or modify  //
-// it under the terms of the GNU General Public License as published by  //
-// the Free Software Foundation; either version 2 of the License, or     //
-// (at your option) any later version.                                   //
-//                                                                       //
-// This program is distributed in the hope that it will be useful,       //
-// but WITHOUT ANY WARRANTY; without even the implied warranty of        //
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         //
-// GNU General Public License for more details:                          //
-//                                                                       //
-//          http://www.gnu.org/copyleft/gpl.html                         //
-//                                                                       //
-///////////////////////////////////////////////////////////////////////////
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 class grade_edit_tree {
     var $columns = array();
@@ -154,7 +146,7 @@ class grade_edit_tree {
             $item = $category->get_grade_item();
 
             // Add aggregation coef input if not a course item and if parent category has correct aggregation type
-            $dimmed = ($item->hidden) ? " dimmed " : "";
+            $dimmed = ($item->is_hidden()) ? " dimmed " : "";
 
             // Before we print the category's row, we must find out how many rows will appear below it (for the filler cell's rowspan)
             $aggregation_position = grade_get_setting($COURSE->id, 'aggregationposition', $CFG->grade_aggregationposition);
@@ -191,7 +183,7 @@ class grade_edit_tree {
 
                     $moveto = '<tr><td colspan="12"><a href="index.php?id='.$COURSE->id.'&amp;action=move&amp;eid='.$this->moving.'&amp;moveafter='
                             . $child_eid.'&amp;sesskey='.sesskey().$first.'"><img class="movetarget" src="'.$CFG->wwwroot.'/pix/movehere.gif" alt="'
-                            . $strmovehere.'" title="'.$strmovehere.'" /></a></td></tr>';
+                            . $strmovehere.'" title="'.s($strmovehere).'" /></a></td></tr>';
                 }
 
                 $newparents = $parents;
@@ -262,7 +254,7 @@ class grade_edit_tree {
 
             $html .= '
                     <tr class="category '.$dimmed.$rowclasses.'">
-                      <th scope="row" title="'.$object->stripped_name.'" class="cell rowspan '.$levelclass.'" rowspan="'.($row_count+1+$row_count_offset).'"></th>';
+                      <th scope="row" title="'.s($object->stripped_name).'" class="cell rowspan '.$levelclass.'" rowspan="'.($row_count+1+$row_count_offset).'"></th>';
 
             foreach ($this->columns as $column) {
                 if (!($this->moving && $column->hide_when_moving) && !$column->is_hidden($mode)) {
@@ -285,7 +277,7 @@ class grade_edit_tree {
 
             // Determine aggregation coef element
 
-            $dimmed = ($item->hidden) ? " dimmed_text " : "";
+            $dimmed = ($item->is_hidden()) ? " dimmed_text " : "";
             $html .= '<tr class="item'.$dimmed.$rowclasses.'">';
 
             foreach ($this->columns as $column) {
@@ -329,13 +321,11 @@ class grade_edit_tree {
         if ((($aggcoef == 'aggregationcoefweight' || $aggcoef == 'aggregationcoef') && $type == 'weight') ||
             ($aggcoef == 'aggregationcoefextra' && $type == 'extra')) {
             return '<input type="text" size="6" id="aggregationcoef_'.$item->id.'" name="aggregationcoef_'.$item->id.'"
-                value="'.format_float($item->aggregationcoef).'" />';
+                value="'.format_float($item->aggregationcoef, 4).'" />';
         } elseif ($aggcoef == 'aggregationcoefextrasum' && $type == 'extra') {
             $checked = ($item->aggregationcoef > 0) ? 'checked="checked"' : '';
-            $extracredit = ($item->aggregationcoef > 0) ? 1 : 0;
-
-            return '<input type="checkbox" id="extracredit_'.$item->id.'" name="extracredit_'.$item->id.'" ' . "$checked />\n"
-                           . '<input type="hidden" name="extracredit_original_'.$item->id.'" value="'.$extracredit.'" />';
+            return '<input type="hidden" name="extracredit_'.$item->id.'" value="0" />
+                    <input type="checkbox" id="extracredit_'.$item->id.'" name="extracredit_'.$item->id.'" value="1" '."$checked />\n";
         } else {
             return '';
         }
@@ -400,6 +390,7 @@ class grade_edit_tree {
 
             $object->set_parent($parent->id);
             $object->move_after_sortorder($sortorder);
+            $sortorder++;
         }
 
         redirect($returnurl, '', 0);
@@ -584,7 +575,7 @@ class grade_edit_tree_column_aggregation extends grade_edit_tree_column_category
 class grade_edit_tree_column_extracredit extends grade_edit_tree_column {
 
     function get_header_cell() {
-        return '<th class="header" scope="col">'.get_string('extracredit', 'grades').helpbutton('aggregationcoefextra', 'aggregationcoefextra', 'grade', true, false, '', true).'</th>';
+        return '<th class="header" scope="col">'.get_string('extracredit', 'grades').helpbutton('aggregationcoefcombo', 'aggregationcoefcombo', 'grade', true, false, '', true).'</th>';
     }
 
     function get_category_cell($category, $levelclass, $params) {
@@ -678,7 +669,7 @@ class grade_edit_tree_column_range extends grade_edit_tree_column {
         } elseif ($item->is_external_item()) {
             $grademax = format_float($item->grademax, $item->get_decimals());
         } else {
-            $grademax = '<input type="text" size="3" id="grademax'.$item->id.'" name="grademax_'.$item->id.'" value="'.format_float($item->grademax, $item->get_decimals()).'" />';
+            $grademax = '<input type="text" size="4" id="grademax'.$item->id.'" name="grademax_'.$item->id.'" value="'.format_float($item->grademax, $item->get_decimals()).'" />';
         }
 
         return '<td class="cell">'.$grademax.'</td>';
@@ -707,14 +698,14 @@ class grade_edit_tree_column_aggregateonlygraded extends grade_edit_tree_column_
 
     function get_category_cell($category, $levelclass, $params) {
         $onlygradedcheck = ($category->aggregateonlygraded == 1) ? 'checked="checked"' : '';
-        $aggregateonlygraded ='<input type="checkbox" id="aggregateonlygraded_'.$category->id.'" name="aggregateonlygraded_'.$category->id.'" '.$onlygradedcheck . ' />';
-        $hidden = '<input type="hidden" name="aggregateonlygraded_original_'.$category->id.'" value="'.$category->aggregateonlygraded.'" />';
+        $hidden = '<input type="hidden" name="aggregateonlygraded_'.$category->id.'" value="0" />';
+        $aggregateonlygraded ='<input type="checkbox" id="aggregateonlygraded_'.$category->id.'" name="aggregateonlygraded_'.$category->id.'" value="1" '.$onlygradedcheck . ' />';
 
         if ($this->forced) {
             $aggregateonlygraded = ($category->aggregateonlygraded) ? get_string('yes') : get_string('no');
         }
 
-        return '<td class="cell '.$levelclass.'">' . $aggregateonlygraded . $hidden.'</td>';
+        return '<td class="cell '.$levelclass.'">'.$hidden.$aggregateonlygraded.'</td>';
     }
 
     function get_item_cell($item, $params) {
@@ -735,14 +726,14 @@ class grade_edit_tree_column_aggregatesubcats extends grade_edit_tree_column_cat
 
     function get_category_cell($category, $levelclass, $params) {
         $subcatscheck = ($category->aggregatesubcats == 1) ? 'checked="checked"' : '';
-        $aggregatesubcats = '<input type="checkbox" id="aggregatesubcats_'.$category->id.'" name="aggregatesubcats_'.$category->id.'" ' . $subcatscheck.' />';
-        $hidden = '<input type="hidden" name="aggregatesubcats_original_'.$category->id.'" value="'.$category->aggregatesubcats.'" />';
+        $hidden = '<input type="hidden" name="aggregatesubcats_'.$category->id.'" value="0" />';
+        $aggregatesubcats = '<input type="checkbox" id="aggregatesubcats_'.$category->id.'" name="aggregatesubcats_'.$category->id.'" value="1" ' . $subcatscheck.' />';
 
         if ($this->forced) {
             $aggregatesubcats = ($category->aggregatesubcats) ? get_string('yes') : get_string('no');
         }
 
-        return '<td class="cell '.$levelclass.'">' . $aggregatesubcats . $hidden.'</td>';
+        return '<td class="cell '.$levelclass.'">'.$hidden.$aggregatesubcats.'</td>';
 
     }
 
@@ -765,14 +756,14 @@ class grade_edit_tree_column_aggregateoutcomes extends grade_edit_tree_column_ca
     function get_category_cell($category, $levelclass, $params) {
 
         $outcomescheck = ($category->aggregateoutcomes == 1) ? 'checked="checked"' : '';
-        $aggregateoutcomes = '<input type="checkbox" id="aggregateoutcomes_'.$category->id.'" name="aggregateoutcomes_'.$category->id.'" ' . $outcomescheck.' />';
-        $hidden = '<input type="hidden" name="aggregateoutcomes_original_'.$category->id.'" value="'.$category->aggregateoutcomes.'" />';
+        $hidden = '<input type="hidden" name="aggregateoutcomes_'.$category->id.'" value="0" />';
+        $aggregateoutcomes = '<input type="checkbox" id="aggregateoutcomes_'.$category->id.'" name="aggregateoutcomes_'.$category->id.'" value="1" ' . $outcomescheck.' />';
 
         if ($this->forced) {
             $aggregateoutcomes = ($category->aggregateoutcomes) ? get_string('yes') : get_string('no');
         }
 
-        return '<td class="cell '.$levelclass.'">' . $aggregateoutcomes . $hidden.'</td>';
+        return '<td class="cell '.$levelclass.'">'.$hidden.$aggregateoutcomes.'</td>';
     }
 
     function get_item_cell($item, $params) {
@@ -855,7 +846,10 @@ class grade_edit_tree_column_multfactor extends grade_edit_tree_column {
     }
 
     function get_item_cell($item, $params) {
-        $multfactor = '<input type="text" size="3" id="multfactor'.$item->id.'" name="multfactor_'.$item->id.'" value="'.format_float($item->multfactor).'" />';
+        if (!$item->is_raw_used()) {
+            return '<td class="cell">&nbsp;</td>';
+        }
+        $multfactor = '<input type="text" size="4" id="multfactor'.$item->id.'" name="multfactor_'.$item->id.'" value="'.format_float($item->multfactor, 4).'" />';
         return '<td class="cell">'.$multfactor.'</td>';
     }
 
@@ -881,7 +875,10 @@ class grade_edit_tree_column_plusfactor extends grade_edit_tree_column {
     }
 
     function get_item_cell($item, $params) {
-        $plusfactor = '<input type="text" size="3" id="plusfactor_'.$item->id.'" name="plusfactor_'.$item->id.'" value="'.format_float($item->plusfactor).'" />';
+        if (!$item->is_raw_used()) {
+            return '<td class="cell">&nbsp;</td>';
+        }
+        $plusfactor = '<input type="text" size="4" id="plusfactor_'.$item->id.'" name="plusfactor_'.$item->id.'" value="'.format_float($item->plusfactor, 4).'" />';
         return '<td class="cell">'.$plusfactor.'</td>';
 
     }

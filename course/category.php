@@ -57,9 +57,9 @@
         if ($resort and confirm_sesskey()) {
             if ($courses = get_courses($category->id, "fullname ASC", 'c.id,c.fullname,c.sortorder')) {
                 // move it off the range
-                $count = get_record_sql('SELECT MAX(sortorder) AS max, 1
+                $count = get_record_sql('SELECT MIN(sortorder) AS min, 1
                                          FROM ' . $CFG->prefix . 'course WHERE category=' . $category->id);
-                $count = $count->max + 100;
+                $count = $count->min;
                 begin_sql();
                 foreach ($courses as $course) {
                     set_field('course', 'sortorder', $count, 'id', $course->id);
@@ -137,7 +137,17 @@
             $courses = array();
             foreach ($data as $key => $value) {
                 if (preg_match('/^c\d+$/', $key)) {
-                    array_push($courses, substr($key, 1));
+                    $courseid = substr($key, 1);
+                    array_push($courses, $courseid);
+
+                    // check this course's category
+                    if ($movingcourse = get_record('course', 'id', $courseid)) {
+                        if ($movingcourse->category != $id ) {
+                            error('The course doesn\'t belong to this category');
+                        }
+                    } else {
+                        error('Error finding the course');
+                    }
                 }
             }
             move_courses($courses, $data->moveto);
@@ -145,7 +155,6 @@
 
     /// Hide or show a course
         if ((!empty($hide) or !empty($show)) and confirm_sesskey()) {
-            require_capability('moodle/course:visibility', $context);
             if (!empty($hide)) {
                 $course = get_record('course', 'id', $hide);
                 $visible = 0;
@@ -153,7 +162,10 @@
                 $course = get_record('course', 'id', $show);
                 $visible = 1;
             }
+
             if ($course) {
+                $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
+                require_capability('moodle/course:visibility', $coursecontext);
                 if (!set_field('course', 'visible', $visible, 'id', $course->id)) {
                     notify('Could not update that course!');
                 }
@@ -183,8 +195,11 @@
                 $swapcourse = get_record('course', 'category',  $category->id,
                         'sortorder', $movecourse->sortorder + 1);
             }
-
             if ($swapcourse and $movecourse) {
+                // check course's category
+                if ($movecourse->category != $id) {
+                    error('The course doesn\'t belong to this category');
+                }
                 // Renumber everything for robustness
                 begin_sql();
                 if (!(    set_field('course', 'sortorder', $max, 'id', $swapcourse->id)

@@ -85,7 +85,6 @@
 
     //Returns every needed user (participant) in a course
     //It uses the xxxx_get_participants() function
-    //plus users needed to backup scales.
     //Also it search for users having messages and
     //users having blogs
     //WARNING: It returns only NEEDED users, not every
@@ -121,21 +120,6 @@
                         }
                     }
                  }
-            }
-        }
-
-        //Now, add scale users (from site and course scales)
-        //Get users
-        $scaleusers = get_records_sql("SELECT DISTINCT userid,userid
-                                       FROM {$CFG->prefix}scale
-                                       WHERE courseid = '0' or courseid = '$courseid'");
-        //Add scale users to results
-        if ($scaleusers) {
-            foreach ($scaleusers as $scaleuser) {
-                //If userid != 0
-                if ($scaleuser->userid != 0) {
-                    $result[$scaleuser->userid]->id = $scaleuser->userid;
-                }
             }
         }
 
@@ -184,7 +168,7 @@
         // get all users with moodle/course:view capability, this will include people
         // assigned at cat level, or site level
         // but it should be ok if they have no direct assignment at course, mod, block level
-        return get_users_by_capability(get_context_instance(CONTEXT_COURSE, $courseid), 'moodle/course:view');
+        return get_users_by_capability(get_context_instance(CONTEXT_COURSE, $courseid), 'moodle/course:view', '', '', '', '', '', '', false);
     }
 
     //Returns all users ids (every record in users table)
@@ -1303,7 +1287,11 @@
                 fwrite ($bf,full_tag("POLICYAGREED",4,false,$user->policyagreed));
                 fwrite ($bf,full_tag("DELETED",4,false,$user->deleted));
                 fwrite ($bf,full_tag("USERNAME",4,false,$user->username));
-                fwrite ($bf,full_tag("PASSWORD",4,false,$user->password));
+                // Prevent user passwords in backup files unless
+                // $CFG->includeuserpasswordsinbackup is defined. MDL-20838
+                if (!empty($CFG->includeuserpasswordsinbackup)) {
+                    fwrite ($bf,full_tag("PASSWORD",4,false,$user->password));
+                }
                 fwrite ($bf,full_tag("IDNUMBER",4,false,$user->idnumber));
                 fwrite ($bf,full_tag("FIRSTNAME",4,false,$user->firstname));
                 fwrite ($bf,full_tag("LASTNAME",4,false,$user->lastname));
@@ -1329,7 +1317,6 @@
                 fwrite ($bf,full_tag("LASTLOGIN",4,false,$user->lastlogin));
                 fwrite ($bf,full_tag("CURRENTLOGIN",4,false,$user->currentlogin));
                 fwrite ($bf,full_tag("LASTIP",4,false,$user->lastip));
-                fwrite ($bf,full_tag("SECRET",4,false,$user->secret));
                 fwrite ($bf,full_tag("PICTURE",4,false,$user->picture));
                 fwrite ($bf,full_tag("URL",4,false,$user->url));
                 fwrite ($bf,full_tag("DESCRIPTION",4,false,$user->description));
@@ -2323,6 +2310,12 @@
             $includedfiles = array();
         }
 
+        //Check if we support unicode modifiers in regular expressions. Cache it.
+        static $unicoderegexp;
+        if (!isset($unicoderegexp)) {
+            $unicoderegexp = @preg_match('/\pL/u', 'a'); // This will fail silenty, returning false,
+        }                                                // if regexp libraries don't support unicode
+
         //Check if preferences is ok. If it isn't set, we are
         //in a scheduled_backup to we are able to get a copy
         //from CFG->backup_preferences
@@ -2346,7 +2339,12 @@
         //     - slashes and %2F by $@SLASH@$
         //     - &forcedownload=1 &amp;forcedownload=1 and ?forcedownload=1 by $@FORCEDOWNLOAD@$
         // This way, backup contents will be neutral and independent of slasharguments configuration. MDL-18799
-        $search = '/(\$@FILEPHP@\$)((?:(?:\/|%2f|%2F))(?:(?:\([-;:@#&=a-zA-Z0-9\$~_.+!*\',]*?\))|[-;:@#&=a-zA-Z0-9\$~_.+!*\',]|%[a-fA-F0-9]{2}|\/)*)?(\?(?:(?:(?:\([-;:@#&=a-zA-Z0-9\$~_.+!*\',]*?\))|[-;:@#&=?a-zA-Z0-9\$~_.+!*\',]|%[a-fA-F0-9]{2}|\/)*))?(?<![,.;])/';
+        // Based in $unicoderegexp, decide the regular expression to use
+        if ($unicoderegexp) { //We can use unicode modifiers
+            $search = '/(\$@FILEPHP@\$)((?:(?:\/|%2f|%2F))(?:(?:\([-;:@#&=\pL0-9\$~_.+!*\',]*?\))|[-;:@#&=\pL0-9\$~_.+!*\',]|%[a-fA-F0-9]{2}|\/)*)?(\?(?:(?:(?:\([-;:@#&=\pL0-9\$~_.+!*\',]*?\))|[-;:@#&=?\pL0-9\$~_.+!*\',]|%[a-fA-F0-9]{2}|\/)*))?(?<![,.;])/u';
+        } else { //We cannot ue unicode modifiers
+            $search = '/(\$@FILEPHP@\$)((?:(?:\/|%2f|%2F))(?:(?:\([-;:@#&=a-zA-Z0-9\$~_.+!*\',]*?\))|[-;:@#&=a-zA-Z0-9\$~_.+!*\',]|%[a-fA-F0-9]{2}|\/)*)?(\?(?:(?:(?:\([-;:@#&=a-zA-Z0-9\$~_.+!*\',]*?\))|[-;:@#&=?a-zA-Z0-9\$~_.+!*\',]|%[a-fA-F0-9]{2}|\/)*))?(?<![,.;])/';
+        }
         $result = preg_replace_callback($search, 'backup_process_filephp_uses', $result);
 
         foreach ($mypreferences->mods as $name => $info) {
@@ -2402,9 +2400,28 @@
             $result = $blockobject->encode_content_links($result,$mypreferences);
         }
 
+        // Finally encode some well-know links to course
+        $result = backup_course_encode_links($result, $mypreferences);
+
         if ($result != $content) {
             debugging('<br /><hr />'.s($content).'<br />changed to<br />'.s($result).'<hr /><br />');
         }
+
+        return $result;
+    }
+
+    /**
+     * Encode some well-know links to course. Restore will recode them to new course id
+     */
+    function backup_course_encode_links($content, $preferences) {
+        global $CFG;
+
+        $base = preg_quote($CFG->wwwroot,"/");
+
+        // Link to the course main page (it also covers "&topic=xx" and "&week=xx"
+        // because they don't become transformed (section number) in backup/restore
+        $search = '/(' . $base . '\/course\/view.php\?id\=)([0-9]+)/';
+        $result = preg_replace($search,'$@COURSEVIEWBYID*$2@$', $content);
 
         return $result;
     }
@@ -2832,9 +2849,14 @@
             }
         }
 
-        // foreach context, call get_roles_on_exact_context insert into array
+        // foreach context, call get_roles_on_exact_context + get_roles_with_override_on_context() and insert into array
         foreach ($contexts as $context) {
-            if ($proles = get_roles_on_exact_context($context)) {
+            if ($proles = get_roles_on_exact_context($context)) { // Look for roles assignments
+                foreach ($proles as $prole) {
+                    $roles[$prole->id] = $prole;
+                }
+            }
+            if ($proles = get_roles_with_override_on_context($context)) { // Look for roles overrides
                 foreach ($proles as $prole) {
                     $roles[$prole->id] = $prole;
                 }

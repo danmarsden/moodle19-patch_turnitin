@@ -1,26 +1,19 @@
-<?php // $Id$
+<?php
 
-///////////////////////////////////////////////////////////////////////////
-// NOTICE OF COPYRIGHT                                                   //
-//                                                                       //
-// Moodle - Modular Object-Oriented Dynamic Learning Environment         //
-//          http://moodle.org                                            //
-//                                                                       //
-// Copyright (C) 1999 onwards  Martin Dougiamas  http://moodle.com       //
-//                                                                       //
-// This program is free software; you can redistribute it and/or modify  //
-// it under the terms of the GNU General Public License as published by  //
-// the Free Software Foundation; either version 2 of the License, or     //
-// (at your option) any later version.                                   //
-//                                                                       //
-// This program is distributed in the hope that it will be useful,       //
-// but WITHOUT ANY WARRANTY; without even the implied warranty of        //
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         //
-// GNU General Public License for more details:                          //
-//                                                                       //
-//          http://www.gnu.org/copyleft/gpl.html                         //
-//                                                                       //
-///////////////////////////////////////////////////////////////////////////
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 require_once '../../../config.php';
 require_once $CFG->libdir.'/gradelib.php';
@@ -43,7 +36,7 @@ if (empty($userid)) {
     require_capability('moodle/grade:viewall', $context);
 
 } else {
-    if (!get_complete_user_data('id', $userid) or isguestuser($userid)) {
+    if (!get_record('user', 'id', $userid, 'deleted', 0) or isguestuser($userid)) {
         error("Incorrect userid");
     }
 }
@@ -91,17 +84,16 @@ if (has_capability('moodle/grade:viewall', $context)) { //Teachers will see all 
     $isseparategroups = ($course->groupmode == SEPARATEGROUPS and !has_capability('moodle/site:accessallgroups', $context));
 
     if ($isseparategroups and (!$currentgroup)) {
-        print_grade_page_head($courseid, 'report', 'user', get_string('modulename', 'gradereport_user'));
-        print_heading(get_string("notingroup"));
-        print_footer($course);
-        exit;
+        // no separate group access, can view only self
+        $userid = $USER->id;
+        $user_selector = '';
+    } else {
+        /// Print graded user selector at the top
+        $user_selector = '<div id="graded_users_selector">';
+        $user_selector .= print_graded_users_selector($course, 'report/user/index.php?id=' . $course->id, $userid, $currentgroup, true, true);
+        $user_selector .= '</div>';
+        $user_selector .= "<p style = 'page-break-after: always;'></p>";
     }
-
-    /// Print graded user selector at the top
-    $user_selector = '<div id="graded_users_selector">';
-    $user_selector .= print_graded_users_selector($course, 'report/user/index.php?id=' . $course->id, $userid, $currentgroup, true, true);
-    $user_selector .= '</div>';
-    $user_selector .= "<p style = 'page-break-after: always;'></p>";
 
     if (empty($userid)) {
         $gui = new graded_users_iterator($course, null, $currentgroup);
