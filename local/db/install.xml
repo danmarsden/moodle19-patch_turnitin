@@ -4,7 +4,7 @@
        xsi:noNamespaceSchemaLocation="../../lib/xmldb/xmldb.xsd"
 >
 <TABLES>
-  <TABLE NAME="tii_files" COMMENT="info about submitted files">
+  <TABLE NAME="tii_files" COMMENT="info about submitted files" NEXT="plagiarism_config">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" ENUM="false" NEXT="course"/>
         <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" ENUM="false" PREVIOUS="id" NEXT="module"/>
@@ -22,6 +22,18 @@
       <INDEXES>
         <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
       </INDEXES>
+    </TABLE>
+    <TABLE NAME="plagiarism_config" COMMENT="info about submitted files" PREVIOUS="tii_files">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="cm"/>
+        <FIELD NAME="cm" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="id" NEXT="name"/>
+        <FIELD NAME="name" TYPE="text" LENGTH="small" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" PREVIOUS="cm" NEXT="value"/>
+        <FIELD NAME="value" TYPE="text" LENGTH="small" NOTNULL="true" SEQUENCE="false" PREVIOUS="name"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id" NEXT="cm"/>
+        <KEY NAME="cm" TYPE="foreign" FIELDS="cm" REFTABLE="course_modules" REFFIELDS="id" PREVIOUS="primary"/>
+      </KEYS>
     </TABLE>
 </TABLES>
 </XMLDB>
