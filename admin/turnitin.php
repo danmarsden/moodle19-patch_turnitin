@@ -1,14 +1,14 @@
 <?php
  //allows the admin to configure turnitin stuff
- 
+
     require_once(dirname(dirname(__FILE__)) . '/config.php');
     require_once($CFG->libdir.'/adminlib.php');
     require_once($CFG->libdir.'/turnitinlib.php');
     include_once($CFG->libdir.'/environmentlib.php'); //for normalize_version function
-    
+
     require_login();
     admin_externalpage_setup('turnitin');
-    
+
     $context = get_context_instance(CONTEXT_SYSTEM);
 
     require_capability('moodle/site:config', $context, $USER->id, true, "nopermissions");
@@ -49,7 +49,7 @@
                     }
                 }
             }
-            //now call TII settings to set up teacher account as set on this page.                
+            //now call TII settings to set up teacher account as set on this page.
                 if ($tiisettings = tii_get_settings()) { //get tii settings.
                     $tii = array();
                     //set globals.
@@ -59,7 +59,7 @@
                     $tii['uln']      = $tiisettings['turnitin_lastname'];
                     $tii['uid']      = $tiisettings['turnitin_userid'];
                     $tii['utp']      = '2'; //2 = this user is an instructor
-                    $tii['cid']      = $tiisettings['turnitin_courseprefix']; //course ID 
+                    $tii['cid']      = $tiisettings['turnitin_courseprefix']; //course ID
                     $tii['ctl']      = $tiisettings['turnitin_courseprefix']; //Course title.  -this uses Course->id and shortname to ensure uniqueness.
                     //$tii['diagnostic'] = '1'; //debug only
 
@@ -74,19 +74,19 @@
         }
      $tiisettings = tii_get_settings();
      $tiiform->set_data($tiisettings);
-     
+
     admin_externalpage_print_header();
-    
+
     if ($tiisettings) {
         //Now show link to ADMIN tii interface - NOTE: this logs in the ADMIN user, should be hidden from normal teachers.
-        $tii['uid']      = $tiisettings['turnitin_userid'];        
+        $tii['uid']      = $tiisettings['turnitin_userid'];
         $tii['username'] = $tiisettings['turnitin_userid'];
         $tii['uem']      = $tiisettings['turnitin_email'];
         $tii['ufn']      = $tiisettings['turnitin_firstname'];
         $tii['uln']      = $tiisettings['turnitin_lastname'];
         $tii['utp']      = '2'; //2 = this user is an instructor
         $tii['utp'] = '3';
-        $tii['fcmd'] = '1'; //when set to 2 this returns XML                     
+        $tii['fcmd'] = '1'; //when set to 2 this returns XML
         $tii['fid'] = '12'; //set commands - Administrator login/statistics.
         echo '<div align="right">';
         echo '<a href="'.tii_get_url($tii).'" target="_blank">'.get_string("adminlogin","turnitin").'</a><br/>';
@@ -104,8 +104,8 @@
     print_simple_box_start('center','90%','','20');
 
     $tiiform->display();
-    
+
     print_simple_box_end();
-    
+
     admin_externalpage_print_footer();
 ?>

@@ -132,12 +132,12 @@
     }
     get_mailer('close');
     mtrace("Finished activity modules");
-    
+
     //now do turnitin submission & get_scores from Turnitin if enabled.
     $tii = get_field('config_plugins', 'value', 'name', 'turnitin_use');
     if (isset($tii) && $tii) {
             require_once("../lib/turnitinlib.php");
-            require_once("../lib/filelib.php");    
+            require_once("../lib/filelib.php");
             tii_send_files();
             tii_get_scores();
     }
