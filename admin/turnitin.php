@@ -75,7 +75,7 @@
      $tiisettings = tii_get_settings();
      $tiiform->set_data($tiisettings);
      
-    admin_externalpage_print_header();   
+    admin_externalpage_print_header();
     
     if ($tiisettings) {
         //Now show link to ADMIN tii interface - NOTE: this logs in the ADMIN user, should be hidden from normal teachers.
@@ -89,12 +89,16 @@
         $tii['fcmd'] = '1'; //when set to 2 this returns XML                     
         $tii['fid'] = '12'; //set commands - Administrator login/statistics.
         echo '<div align="right">';
-        echo '<a href="'.tii_get_url($tii).'" target="_blank">'.get_string("adminlogin","turnitin").'</a>';
+        echo '<a href="'.tii_get_url($tii).'" target="_blank">'.get_string("adminlogin","turnitin").'</a><br/>';
+        $tii['utp'] = '2';
+        $tii['fid'] = '1'; //set commands - Administrator login/statistics.
+        echo '<a href="'.tii_get_url($tii).'" target="_blank">'.get_string('teacherlogin', 'turnitin').'</a>';
         echo '</div>';
     }
 
     print_heading(get_string('tiiheading', 'turnitin'));
-
+    $currenttab='turnitinsettings';
+    require_once('turnitin_tabs.php');
     print_box(get_string('tiiexplain', 'turnitin'));
 
     print_simple_box_start('center','90%','','20');

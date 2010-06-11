@@ -67,4 +67,15 @@ class turnitin_form extends moodleform {
     }
 }
 
+
+class turnitin_defaults_form extends moodleform {
+
+/// Define the form
+    function definition () {
+        $mform =& $this->_form;
+        turnitin_get_form_elements($mform);
+        $this->add_action_buttons(true);
+    }
+}
+
 ?>

@@ -6,7 +6,7 @@
     require_once($CFG->libdir.'/turnitinlib.php');
 
     require_login();
-    admin_externalpage_setup('turnitin_errors');
+    admin_externalpage_setup('turnitin');
 
     $context = get_context_instance(CONTEXT_SYSTEM);
 
@@ -16,6 +16,8 @@
 
     admin_externalpage_print_header();
     print_heading(get_string('turnitinerrors', 'turnitin'));
+    $currenttab='turnitinerrors';
+    require_once('turnitin_tabs.php');
     //run check to tidy up bad 31 codes with deleted files.
     $files = get_records('tii_files','tiicode','31');
     if (!empty($files)) {
@@ -104,6 +106,7 @@
 
         $sql = "tiicode <>'success' AND tiicode<>'pending' AND tiicode<>'51'";
         $tiifiles = get_records_select('tii_files', $sql);
+        if (!empty($tiifiles)) {
         $pagesize = 15;
         $table->pagesize($pagesize, count($tiifiles));
         $start = $page * $pagesize;
@@ -119,7 +122,7 @@
                 $table->add_data($row);
             }
         }
-
+        }
         $table->print_html();
         if (!empty($tiifiles)) {
             echo '<br/><br/><div align="center">';

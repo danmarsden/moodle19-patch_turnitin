@@ -59,53 +59,6 @@ function xmldb_assignment_upgrade($oldversion=0) {
         $db->debug = true;
     }
 
-    if ($result && $oldversion < 2007101512) {
-        //new TII field in assignment table
-        $table = new XMLDBTable('assignment');
-
-        $field = new XMLDBField('use_tii_submission');
-        if (!field_exists($table, $field)) {
-            $field->setAttributes(XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null, null, '0', 'maxbytes');
-        
-            if ($result) {
-                $result = $result && add_field($table, $field);
-            }
-        }
-    }
-    if ($result && $oldversion < 2007101513) {
-        //new TII field in assignment table
-        $table = new XMLDBTable('assignment');
-
-        $field = new XMLDBField('tii_show_student_score');
-        if (!field_exists($table, $field)) {
-            $field->setAttributes(XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null, null, '0', 'use_tii_submission');
-        
-            if ($result) {
-                $result = $result && add_field($table, $field);
-            }
-        }
-        $field = new XMLDBField('tii_show_student_report');
-        if (!field_exists($table, $field)) {
-            $field->setAttributes(XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null, null, '0', 'tii_show_student_score');
-        
-            if ($result) {
-                $result = $result && add_field($table, $field);
-            }
-        }
-    }
-    if ($result && $oldversion < 2007101514) {
-        //new TII field in assignment table
-        $table = new XMLDBTable('assignment');
-
-        $field = new XMLDBField('tii_draft_submit');
-        if (!field_exists($table, $field)) {
-            $field->setAttributes(XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, null, null, null, null, '0', 'tii_show_student_report');
-        
-            if ($result) {
-                $result = $result && add_field($table, $field);
-            }
-        }
-    }
     return $result;
 }
 

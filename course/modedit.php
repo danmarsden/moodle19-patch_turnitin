@@ -5,6 +5,7 @@
     require_once("../config.php");
     require_once("lib.php");
     require_once($CFG->libdir.'/gradelib.php');
+    require_once($CFG->libdir.'/turnitinlib.php');
 
     require_login();
 
@@ -413,6 +414,7 @@
 
         rebuild_course_cache($course->id);
         grade_regrade_final_grades($course->id);
+        plagiarism_save_form_elements($fromform); //save plagiarism settings
 
         if (isset($fromform->submitbutton)) { 
             redirect("$CFG->wwwroot/mod/$module->name/view.php?id=$fromform->coursemodule");

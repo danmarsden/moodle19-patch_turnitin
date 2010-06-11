@@ -28,6 +28,47 @@ function xmldb_local_upgrade($oldversion) {
         }
 
     }
-    return($result);
+
+    if ($result && $oldversion < 2008052501) {
+        //plagiarism_config table for configuration of modules
+        $table = new XMLDBTable('plagiarism_config');
+        $table->addFieldInfo('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null, null, null);
+        $table->addFieldInfo('cm', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null, null, null);
+        $table->addFieldInfo('name', XMLDB_TYPE_TEXT, 'small', null, XMLDB_NOTNULL, null, null, null, null, null);
+        $table->addFieldInfo('value', XMLDB_TYPE_TEXT, 'small', null, XMLDB_NOTNULL, null, null, null, null, null);
+        /// Adding keys to table
+        $table->addKeyInfo('primary', XMLDB_KEY_PRIMARY, array('id'));
+
+        /// Launch create table
+        $result = $result && create_table($table);
+        
+        //now get all existing settings from old assignment table
+        $assignments = get_records('assignment', 'use_tii_submission', 1);
+        foreach ($assignments as $assignment) {
+            $cm = get_coursemodule_from_instance('assignment', $assignment->id);
+            $pconfig = new stdclass();
+            $pconfig->cm = $cm->id;
+            $pconfig->name = 'use_turnitin';
+            $pconfig->value = $assignment->use_tii_submission;
+            insert_record('plagiarism_config', $pconfig);
+            $pconfig->name = 'plagiarism_show_student_score';
+            $pconfig->value = $assignment->tii_show_student_score;
+            insert_record('plagiarism_config', $pconfig);
+            $pconfig->name = 'plagiarism_show_student_report';
+            $pconfig->value = $assignment->tii_show_student_report;
+            insert_record('plagiarism_config', $pconfig);
+        }
+        $table = new XMLDBTable('assignment');
+        $field = new XMLDBField('use_tii_submission');
+        $result = $result && drop_field($table, $field);
+        $field = new XMLDBField('tii_show_student_score');
+        $result = $result && drop_field($table, $field);
+        $field = new XMLDBField('tii_show_student_report');
+        $result = $result && drop_field($table, $field);
+    }
+
+    return $result;
+
 }
+
 ?>

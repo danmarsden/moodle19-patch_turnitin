@@ -1708,9 +1708,7 @@ class assignment_base {
 
                     $output .= '<img src="'.$CFG->pixpath.'/f/'.$icon.'" class="icon" alt="'.$icon.'" />'.
                             '<a href="'.$ffurl.'" >'.$file.'</a>';
-                            
-                    $output .= $this->get_turnitin_links($userid, $file);
-                    $output .='<br />';
+                    $output .= plagiarism_get_links($userid, $file, $this->cm->id,$this->course,$this->assignment);                    $output .='<br />';
                 }
             }
         }
@@ -1948,49 +1946,6 @@ class assignment_base {
         }
 
         return $status;
-    }
-
-    function get_turnitin_links($userid, $file) {
-        global $CFG,$USER;
-        $output = '';
-        if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission) { //if this assignment uses tii
-            //check if this is a user trying to look at their details, or a teacher with viewsimilarityscore rights.
-            if (($USER->id == $userid) || has_capability('moodle/turnitin:viewsimilarityscore', $this->context)) { 
-                include_once($CFG->libdir.'/turnitinlib.php');
-                if ($tiisettings = tii_get_settings()) {
-                    $tiifile = get_records('tii_files', array('course'=>$this->assignment->course, 
-                                                                   'module'=> get_field('modules', 'id','name','assignment'),
-                                                                   'instance'=>$this->assignment->id,
-                                                                   'userid'=>$userid,
-                                                                   'filename'=>$file->get_filename()));
-                    if (isset($tiifile->tiiscore) && $tiifile->tiicode=='success') { //if TII has returned a succesful score.
-                        $assignclosed = ! $this->isopen();
-                        if ($USER->id <> $userid) { //this is a teacher with moodle/turnitin:viewsimilarityscore
-                            if (has_capability('moodle/turnitin:viewfullreport', $this->context)) {
-                                $output .= '&nbsp;<a class="turnitinreport" href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a>'.$tiifile->tiiscore.'%';
-                            } else {
-                                $output .= '&nbsp;'.get_string('similarity', 'turnitin').':'.$tiifile->tiiscore.'%';
-                            }
-                        } elseif (isset($this->assignment->tii_show_student_report) && isset($this->assignment->tii_show_student_score) and //if report and score fields are set.
-                           ($this->assignment->tii_show_student_report== 1 or $this->assignment->tii_show_student_score ==1 or //if show always is set
-                           ($this->assignment->tii_show_student_score==2 && $assignclosed) or //if student score to be show when assignment closed
-                           ($this->assignment->tii_show_student_report==2 && $assignclosed))) { //if student report to be shown when assignment closed
-                           if (($this->assignment->tii_show_student_report==2 && $assignclosed) or $this->assignment->tii_show_student_report==1) { 
-                               $output .= '&nbsp;<a href="'.tii_get_report_link($tiifile).'" target="_blank">'.get_string('similarity', 'turnitin').'</a>';
-                               if ($this->assignment->tii_show_student_score==1 or ($this->assignment->tii_show_student_score==2 && $assignclosed)) {
-                                   $output .= ':'.$tiifile->tiiscore.'%';
-                               }
-                           } else {
-                               $output .= '&nbsp;'.get_string('similarity', 'turnitin').':'.$tiifile->tiiscore.'%';
-                           }
-                        }
-                    } elseif(isset($tiifile->tiicode)) { //always display errors - even if the student isn't able to see report/score.
-                        $output .= tii_error_text($tiifile->tiicode);
-                    }
-                }
-            }
-        }
-        return $output;
     }
 
     /**
