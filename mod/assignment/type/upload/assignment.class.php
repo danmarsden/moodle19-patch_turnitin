@@ -623,7 +623,6 @@ class assignment_upload extends assignment_base {
                 $this->view_footer();
                 die;
             }
-
             redirect('view.php?id='.$this->cm->id);
         }
         $this->view_header(get_string('upload'));

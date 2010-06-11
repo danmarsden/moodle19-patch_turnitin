@@ -12,4 +12,5 @@ $settings->add(new admin_setting_configselect('assignment_itemstocount', get_str
 
 $settings->add(new admin_setting_configcheckbox('assignment_showrecentsubmissions', get_string('showrecentsubmissions', 'assignment'),
                    get_string('configshowrecentsubmissions', 'assignment'), 1));
+
 ?>
