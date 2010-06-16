@@ -159,7 +159,8 @@ class assignment_base {
         $formatoptions->noclean = true;
         echo format_text($this->assignment->description, $this->assignment->format, $formatoptions);
         print_simple_box_end();
-        if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission) {
+        $plagiarismvalues = get_records_menu('plagiarism_config', 'cm',$this->cm->id,'','name,value');
+        if (!empty($plagiarismvalues['use_turnitin'])) {
             include_once('../../lib/turnitinlib.php');
             if ($tiisettings = tii_get_settings()) {
                 if (!empty($tiisettings['turnitin_student_disclosure'])) {

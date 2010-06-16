@@ -155,7 +155,8 @@ class assignment_uploadsingle extends assignment_base {
                         $this->update_grade($submission);
                         $this->email_teachers($newsubmission);
                         print_heading(get_string('uploadedfile'));
-                        if (isset($this->assignment->use_tii_submission) && $this->assignment->use_tii_submission) {
+                        $plagiarismvalues = get_records_menu('plagiarism_config', 'cm',$this->cm->id,'','name,value');
+                        if (!empty($plagiarismvalues['use_turnitin'])) {
                             include_once($CFG->libdir.'/turnitinlib.php');
                             update_tii_files($um->get_new_filename(), $this->course->id, $this->cm->module, $this->assignment->id);
                         }
