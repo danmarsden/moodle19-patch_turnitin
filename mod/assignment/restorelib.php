@@ -115,11 +115,7 @@
                 if (restore_userdata_selected($restore,'assignment',$mod->id)) { 
                     //Restore assignmet_submissions
                     $status = assignment_submissions_restore_mods($mod->id, $newid,$info,$restore, $assignment) && $status;
-
-                    //now restore Turnitin Data.
-                    $status = assignment_restore_tiifiles($newid,$info,$restore);
                 }
-
             } else {
                 $status = false;
             }
@@ -513,55 +509,6 @@
 
         if ($status) {
             $status = $log;
-        }
-        return $status;
-    }
-    function assignment_restore_tiifiles($assignmentid,$info,$restore) {
-        global $CFG;
-
-        $status = true;
-
-        $tiifiles = $info['MOD']['#']['TIIFILES']['0']['#']['TIIFILE'];
-        
-        if (empty($tiifiles)) { //return true if no tiifiles to restore
-            return $status;
-        }
-        //Iterate over tiifiles
-        for($i = 0; $i < sizeof($tiifiles); $i++) {
-            $tii_info = $tiifiles[$i];
-                        //We'll need this later!!
-            $oldid = backup_todb($tii_info['#']['ID']['0']['#']);
-            $olduserid = backup_todb($tii_info['#']['USERID']['0']['#']);
-            //Now, build the tii_files record structure
-            $tiifile->id = $assignmentid;
-            $tiifile->userid =  backup_todb($tii_info['#']['USERID']['0']['#']);
-            $tiifile->course =  backup_todb($restore->course_id);
-            $tiifile->module=   backup_todb(get_field('modules','id', 'name', 'assignment'));
-            $tiifile->instance =backup_todb($assignmentid);
-            $tiifile->filename =backup_todb($tii_info['#']['FILENAME']['0']['#']);
-            $tiifile->tii =     backup_todb($tii_info['#']['TII']['0']['#']);
-            $tiifile->tiicode = backup_todb($tii_info['#']['TIICODE']['0']['#']);
-            $tiifile->tiiscore =backup_todb($tii_info['#']['TIISCORE']['0']['#']);
-            
-            //We have to recode the userid field
-            $user = backup_getid($restore->backup_unique_code,"user",$tiifile->userid);
-            if ($user) {
-                $tiifile->userid = $user->new_id;
-            }
-            
-            //The structure is equal to the db, so insert the choice_answers
-            $newid = insert_record ("tii_files",$tiifile);
-            
-            //Do some output
-            if (($i+1) % 50 == 0) {
-                if (!defined('RESTORE_SILENTLY')) {
-                    echo ".";
-                    if (($i+1) % 1000 == 0) {
-                        echo "<br />";
-                    }
-                }
-                backup_flush(300);
-            }
         }
         return $status;
     }
