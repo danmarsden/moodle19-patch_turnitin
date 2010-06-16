@@ -964,7 +964,7 @@ function plagiarism_get_css_rank ($score) {
                             }
                             $output .= '</span>';
                         } else {
-                            $output .= '<span class="plagiarismreport">'.get_string('similarity', 'turnitin').':<span class="'.$rank.'">'.$plagiarismfile->similarityscore.'%</span>';
+                            $output .= '<span class="plagiarismreport">'.get_string('similarity', 'turnitin').':<span class="'.$rank.'">'.$plagiarismfile->tiiscore.'%</span>';
                         }
                     }
                 } else if(isset($plagiarismfile->tiicode)) { //always display errors - even if the student isn't able to see report/score.
