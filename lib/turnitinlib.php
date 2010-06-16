@@ -512,8 +512,13 @@ function tii_send_files() {
                             }
                             if ($tiixml->rcode[0]==TURNITIN_RESP_ASSIGN_CREATED or 
                                 $tiixml->rcode[0]==TURNITIN_RESP_ASSIGN_MODIFIED) {
-                                $processedmodules[$moduletype][$module->id] = true; //Only do the last 2 calls once per cron.
-                                mtrace("Turnitin Success creating Class and assignment");
+                                if ($dtstart+900 > time()) { //Turnitin doesn't like receiving files too close to start time 
+                                    mtrace("Warning: assignment start date is too early ".date('Y-m-d H:i:s', $dtstart)." in course $course->shortname assignment $module->name will delay sending files until next cron");
+                                    $processedmodules[$moduletype][$module->id] = false; //try again next cron
+                                } else {
+                                    $processedmodules[$moduletype][$module->id] = true; //Only do the last 2 calls once per cron.
+                                    mtrace("Turnitin Success creating Class and assignment");
+                                }
                             } else {
                                 mtrace("Error: could not create assignment in course $course->shortname assignment $module->name TIICODE:".$tiixml->rcode[0]);
                                 $processedmodules[$moduletype][$module->id] = false; //try again next cron
