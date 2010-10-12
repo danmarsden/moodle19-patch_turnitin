@@ -440,7 +440,7 @@ function tii_send_files() {
                                 $tii['assignid']   = $plagiarismvalues['turnitin_assignid'];
                                 $tii['fcmd'] = TURNITIN_UPDATE_RETURN_XML;
                             } else {
-                                $tii['assignid'] = $tiisettings['turnitin_courseprefix']. '_'.$modname.'_'.$module->id; //assignment ID - uses $returnid to ensure uniqueness
+                                $tii['assignid'] = $tiisettings['turnitin_courseprefix']. '_'.$modname.'_'.$module->id.'_'; //assignment ID - uses $returnid to ensure uniqueness
                                 $tii['fcmd'] = TURNITIN_RETURN_XML;
                             }
                             $tii['assign']   = $tiisettings['turnitin_courseprefix']. '_'.$modname.'_'.$module->id; //assignment name stored in TII
@@ -502,7 +502,17 @@ function tii_send_files() {
                                 insert_record('plagiarism_config', $configval);
                             }
                             $tii['late_accept_flag']  = (empty($module->preventlate) ? '1' : '0');
-                            $tii['s_view_report'] = '1'; //allow students to view the full report.
+                            if (isset($plagiarismvalues['plagiarism_show_student_report'])) {
+                                $tii['s_view_report']     = (empty($plagiarismvalues['plagiarism_show_student_report']) ? '0' : '1'); //allow students to view the full report.
+                            } else {
+                                $tii['s_view_report']     = '1';
+                            }
+                            $tii['s_paper_check']     = (isset($plagiarismvalues['plagiarism_compare_student_papers']) ? $plagiarismvalues['plagiarism_compare_student_papers'] : '1');
+                            $tii['internet_check']    = (isset($plagiarismvalues['plagiarism_compare_internet']) ? $plagiarismvalues['plagiarism_compare_internet'] : '1');
+                            $tii['journal_check']     = (isset($plagiarismvalues['plagiarism_compare_journals']) ? $plagiarismvalues['plagiarism_compare_journals'] : '1');
+                            $tii['report_gen_speed']  = (isset($plagiarismvalues['plagiarism_report_gen']) ? $plagiarismvalues['plagiarism_report_gen'] : '1');
+                            $tii['exclude_type']      = (isset($plagiarismvalues['plagiarism_exclude_matches']) ? $plagiarismvalues['plagiarism_exclude_matches'] : '0');
+                            $tii['exclude_value']     = (isset($plagiarismvalues['plagiarism_exclude_matches_value']) ? $plagiarismvalues['plagiarism_exclude_matches_value'] : '');
                             //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
                             $tiixml = tii_post_data($tii);
 
@@ -546,7 +556,7 @@ function tii_send_files() {
                    //now send the files.
                    //if this module and assignment have been created successfully, send the files to Turnitin!
                    if (!(isset($processedmodules[$moduletype][$module->id]) && $processedmodules[$moduletype][$module->id])) {
-                       mtrace("could not send a file, as class  and assignment could not be created. course $course->shortname assignment $module->name");
+                       //mtrace("could not send a file, as class  and assignment could not be created. course $course->shortname assignment $module->name");
                    } else {
                        $tii2 = array();
                        $tii2['username'] = $user->username;
@@ -608,13 +618,17 @@ function tii_get_scores() {
                //set globals.
                $user = get_record('user', 'id', $file->userid);
                $course = get_record('course', 'id', $file->course);
+               if (empty($user) or empty($course)) {
+                   //this course/user doesn't exist anymore so delete it.
+                   delete_records('tii_files', 'id', $file->id);
+               }
 
-               $tii['username'] = $user->username;
-               $tii['uem']      = $user->email;
-               $tii['ufn']      = $user->firstname;
-               $tii['uln']      = $user->lastname;
-               $tii['uid']      = $user->username;
-               $tii['utp']      = TURNITIN_STUDENT; // 1= this is a student.
+               $tii['username'] = $tiisettings['turnitin_userid'];
+               $tii['uem']      = $tiisettings['turnitin_email'];
+               $tii['ufn']      = $tiisettings['turnitin_firstname'];
+               $tii['uln']      = $tiisettings['turnitin_lastname'];
+               $tii['uid']      = $tiisettings['turnitin_userid'];
+               $tii['utp']      = TURNITIN_INSTRUCTOR; //2 = this user is an instructor
                $courseshortname = (strlen($course->shortname) > 40 ? substr($course->shortname, 0, 40) : $course->shortname); //shouldn't happen but just in case!
                $tii['cid'] = get_config('plagiarism_turnitin_course', $course->id); //course ID
                if (empty($tii['cid'])) {
@@ -949,7 +963,7 @@ function plagiarism_get_css_rank ($score) {
                     $rank = plagiarism_get_css_rank($plagiarismfile->tiiscore);
                     if ($USER->id <> $userid) { //this is a teacher with moodle/plagiarism_turnitin:viewsimilarityscore
                         if (has_capability('moodle/local:viewfullreport', $modulecontext)) {
-                            $output .= '<span class="plagiarismreport"><a href="'.tii_get_report_link($plagiarismfile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a><span class="'.$rank.'">'.$plagiarismfile->similarityscore.'%</span></span>';
+                            $output .= '<span class="plagiarismreport"><a href="'.tii_get_report_link($plagiarismfile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a><span class="'.$rank.'">'.$plagiarismfile->tiiscore.'%</span></span>';
                         } else {
                             $output .= '<span class="plagiarismreport">'.get_string('similarity', 'turnitin').':<span class="'.$rank.'">'.$plagiarismfile->tiiscore.'%</span></span>';
                         }

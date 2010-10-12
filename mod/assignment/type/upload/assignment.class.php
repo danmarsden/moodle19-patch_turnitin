@@ -285,7 +285,7 @@ class assignment_upload extends assignment_base {
 
     function print_student_answer($userid, $return=false){
         global $CFG, $COURSE;
-
+        include_once($CFG->libdir.'/turnitinlib.php');
         $filearea = $this->file_area_name($userid);
         $submission = $this->get_submission($userid);
 
