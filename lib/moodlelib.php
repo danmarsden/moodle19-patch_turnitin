@@ -2088,7 +2088,11 @@ function require_login($courseorid=0, $autologinguest=true, $cm=null, $setwantsu
                     print_header_simple('', '',
                             build_navigation(array(array('name' => $strloggedinasguest, 'link' => null, 'type' => 'misc'))));
                     if (empty($USER->access['rsw'][$COURSE->context->path])) {  // Normal guest
-                        notice(get_string('guestsnotallowed', '', format_string($COURSE->fullname)), "$CFG->wwwroot/login/index.php");
+                            $loginurl = "$CFG->wwwroot/login/index.php";
+                            if (!empty($CFG->loginhttps)) {
+                                $loginurl = str_replace('http:','https:', $loginurl);
+                            }
+                        notice(get_string('guestsnotallowed', '', format_string($COURSE->fullname)), $loginurl);
                     } else {
                         notify(get_string('guestsnotallowed', '', format_string($COURSE->fullname)));
                         echo '<div class="notifyproblem">'.switchroles_form($COURSE->id).'</div>';
@@ -2617,7 +2621,7 @@ function isloggedin() {
  * @return bool true if user is the real guest user, false if not logged in or other user
  */
 function isguestuser($user=NULL) {
-    global $USER;
+    global $USER, $CFG;
     if ($user === NULL) {
         $user = $USER;
     } else if (is_numeric($user)) {
@@ -2628,7 +2632,7 @@ function isguestuser($user=NULL) {
         return false; // not logged in, can not be guest
     }
 
-    return ($user->username == 'guest');
+    return ($user->username == 'guest' and $user->mnethostid == $CFG->mnet_localhost_id);
 }
 
 /**
@@ -2679,7 +2683,6 @@ function ismoving($courseid) {
  * @param bool $override If true then the name will be first name followed by last name rather than adhering to fullnamedisplay setting.
  */
 function fullname($user, $override=false) {
-
     global $CFG, $SESSION;
 
     if (!isset($user->firstname) and !isset($user->lastname)) {
@@ -2699,7 +2702,7 @@ function fullname($user, $override=false) {
         $CFG->fullnamedisplay = $SESSION->fullnamedisplay;
     }
 
-    if ($CFG->fullnamedisplay == 'firstname lastname') {
+    if (!isset($CFG->fullnamedisplay) or $CFG->fullnamedisplay === 'firstname lastname') {
         return $user->firstname .' '. $user->lastname;
 
     } else if ($CFG->fullnamedisplay == 'lastname firstname') {
@@ -3052,9 +3055,10 @@ function truncate_userinfo($info) {
                     );
 
     // apply where needed
+    $textlib = textlib_get_instance();
     foreach (array_keys($info) as $key) {
         if (!empty($limit[$key])) {
-            $info[$key] = trim(substr($info[$key],0, $limit[$key]));
+            $info[$key] = trim($textlib->substr($info[$key],0, $limit[$key]));
         }
     }
 
@@ -3273,7 +3277,7 @@ function complete_user_login($user) {
     $USER = $user; // this is required because we need to access preferences here!
 
     if (!empty($CFG->regenloginsession)) {
-        // please note this setting may break some auth plugins        
+        // please note this setting may break some auth plugins
         session_regenerate_id();
     }
 
@@ -5792,7 +5796,7 @@ function get_list_of_countries_language() {
 
     if ($lang == 'en_utf8') {
     	return;
-    } 
+    }
 
     $parentlang = get_string('parentlanguage');
     if (substr($parentlang, 0, 1) != '[') {
@@ -5805,7 +5809,7 @@ function get_list_of_countries_language() {
 
 	    if ($parentlang == 'en_utf8') {
 	        return;
-	    } 
+	    }
     }
 
     if (is_readable($CFG->dataroot.'/lang/en_utf8/countries.php')) {
@@ -5845,7 +5849,7 @@ function get_list_of_countries() {
     if (is_readable($CFG->dataroot.'/lang/' . $lang . '_local/countries.php')) {
         include($CFG->dataroot.'/lang/' . $lang . '_local/countries.php');
     }
-        
+
     if (empty($string)) {
         print_error('countriesphpempty', '', '', $lang);
     }
@@ -6910,7 +6914,7 @@ function shorten_text($text, $ideal=30, $exact = false) {
 
     // This array stores information about open and close tags and their position
     // in the truncated string. Each item in the array is an object with fields
-    // ->open (true if open), ->tag (tag name in lower case), and ->pos 
+    // ->open (true if open), ->tag (tag name in lower case), and ->pos
     // (byte position in truncated text)
     $tagdetails = array();
 
@@ -6923,12 +6927,12 @@ function shorten_text($text, $ideal=30, $exact = false) {
             // if tag is a closing tag (f.e. </b>)
             } else if (preg_match('/^<\s*\/([^\s]+?)\s*>$/s', $line_matchings[1], $tag_matchings)) {
                 // record closing tag
-                $tagdetails[] = (object)array('open'=>false, 
+                $tagdetails[] = (object)array('open'=>false,
                     'tag'=>strtolower($tag_matchings[1]), 'pos'=>strlen($truncate));
             // if tag is an opening tag (f.e. <b>)
             } else if (preg_match('/^<\s*([^\s>!]+).*?>$/s', $line_matchings[1], $tag_matchings)) {
                 // record opening tag
-                $tagdetails[] = (object)array('open'=>true, 
+                $tagdetails[] = (object)array('open'=>true,
                     'tag'=>strtolower($tag_matchings[1]), 'pos'=>strlen($truncate));
             }
             // add html-tag to $truncate'd text
