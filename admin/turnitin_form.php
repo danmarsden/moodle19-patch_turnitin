@@ -30,7 +30,10 @@ class turnitin_form extends moodleform {
         $mform->addElement('passwordunmask', 'turnitin_secretkey', get_string('tiisecretkey', 'turnitin'));
         $mform->addElement('static','turnitin_secretkey_description', '', get_string('configtiisecretkey', 'turnitin'));
         $mform->addRule('turnitin_secretkey', null, 'required', null, 'client');
-                
+
+        $mform->addElement('checkbox', 'turnitin_institutionnode', get_string('turnitin_institutionnode', 'turnitin'));
+        $mform->addElement('static','turnitin_institutionnode_description', '', get_string('turnitin_institutionnode_help', 'turnitin'));
+
         $mform->addElement('checkbox', 'turnitin_senduseremail', get_string('tiisenduseremail', 'turnitin'));
         $mform->addElement('static','turnitin_senduseremail_description', '', get_string('config_tiisenduseremail', 'turnitin'));
          

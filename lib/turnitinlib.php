@@ -912,7 +912,7 @@ function plagiarism_get_css_rank ($score) {
         $mform->setHelpButton('plagiarism_compare_internet', array('compareinternet', get_string('compareinternet', 'turnitin'),'turnitin'));
         $mform->addElement('select', 'plagiarism_compare_journals', get_string("comparejournals", "turnitin"), $ynoptions);
         $mform->setHelpButton('plagiarism_compare_journals', array('comparejournals', get_string('comparejournals', 'turnitin'),'turnitin'));
-        if (get_config('plagiarism', 'turnitin_institutionnode')) {
+        if (get_config('tii', 'turnitin_institutionnode')) {
             $mform->addElement('select', 'plagiarism_compare_institution', get_string("compareinstitution", "turnitin"), $ynoptions);
             $mform->setHelpButton('plagiarism_compare_institution', array('compareinstitution', get_string('compareinstitution', 'turnitin'),'turnitin'));
         }
