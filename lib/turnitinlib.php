@@ -390,7 +390,7 @@ function tii_send_files() {
                    delete_records('tii_files', 'id', $file->id);
                    continue;
                }
-
+               $tiisession = turnitin_start_session();
                $cm = get_coursemodule_from_instance($moduletype, $file->instance);
                $plagiarismvalues = get_records_menu('plagiarism_config', 'cm',$cm->id,'','name,value');
                if (!empty($module->timedue) && !empty($module->preventlate) && ($module->timedue+(24 * 50 * 60) < time())) {
@@ -409,6 +409,7 @@ function tii_send_files() {
                         $tii['utp']      = TURNITIN_INSTRUCTOR; //2 = this user is an instructor
                         $tii['ctl']      = (strlen($course->shortname) > 45 ? substr($course->shortname, 0, 45) : $course->shortname);
                         $tii['ctl']      = (strlen($tii['ctl']) > 5 ? $tii['ctl'] : $tii['ctl']."_____");
+                        $tii['session-id'] = $tiisession;
                         //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
                         if (get_config('plagiarism_turnitin_course', $course->id)) {
                             //course already exists - don't bother to create it.
@@ -440,9 +441,12 @@ function tii_send_files() {
                                 $tii['assignid']   = $plagiarismvalues['turnitin_assignid'];
                                 $tii['fcmd'] = TURNITIN_UPDATE_RETURN_XML;
                                 if (empty($module->timeavailable)) {
-                                    $tii['dtstart'] = rawurlencode(date('Y-m-d H:i:s', time()+60*60));
+                                    $dtstart = time()+60*60;
+                                    $tii['dtstart'] = rawurlencode(date('Y-m-d H:i:s', $dtstart));
+
                                 } else {
                                     $tii['dtstart']  = rawurlencode(date('Y-m-d H:i:s', $module->timeavailable));
+                                    $dtstart = $module->timeavailable;
                                 }
                                 if (empty($module->timedue)) {
                                     $tii['dtdue'] = rawurlencode(date('Y-m-d H:i:s', time()+(365 * 24 * 60 * 60)));
@@ -457,7 +461,7 @@ function tii_send_files() {
                             }
                             $tii['assign']   = (strlen($module->name) > 90 ? substr($module->name, 0, 90) : $module->name); //assignment name stored in TII
                             $tii['fid']      = TURNITIN_CREATE_ASSIGNMENT;
-                            $tii['ptl']      = $course->id.$courseshortname; //paper title? - assname?
+                            $tii['ptl']      = $course->id.$course->shortname; //paper title? - assname?
                             $tii['ptype']    = '2'; //filetype
                             $tii['pfn']      = $tii['ufn'];
                             $tii['pln']      = $tii['uln'];
@@ -502,15 +506,16 @@ function tii_send_files() {
                                     $tii['fcmd'] = TURNITIN_UPDATE_RETURN_XML;
                                     if (!empty($module->timeavailable)) {
                                         $tii['dtstart']  = rawurlencode(date('Y-m-d H:i:s', $module->timeavailable));
+                                        $dtstart = $module->timeavailable;
                                     }
                                     if (!empty($module->timedue)) {
                                         $tii['dtdue']    = rawurlencode(date('Y-m-d H:i:s', $module->timedue));
                                     }
                                 }
-                                $tiixml = turnitin_post_data($tii, $plagiarismsettings);
+                                $tiixml = tii_post_data($tii);
                             }
                             if ($tiixml->rcode[0]==TURNITIN_RESP_ASSIGN_MODIFIED) {
-                                if ($dtstart+900 > time()) { //Turnitin doesn't like receiving files too close to start time 
+                                if ($dtstart+900 > time()) { //Turnitin doesn't like receiving files too close to start time
                                     mtrace("Warning: assignment start date is too early ".date('Y-m-d H:i:s', $dtstart)." in course $course->shortname assignment $module->name will delay sending files until next cron");
                                     $processedmodules[$moduletype][$module->id] = false; //try again next cron
                                 } else {
@@ -542,6 +547,8 @@ function tii_send_files() {
                        $tii2['ctl']      = (strlen($course->shortname) > 45 ? substr($course->shortname, 0, 45) : $course->shortname);
                        $tii2['ctl']      = (strlen($tii['ctl']) > 5 ? $tii['ctl'] : $tii['ctl']."_____");
                        $tii2['fcmd']     = TURNITIN_RETURN_XML; //when set to 2 the tii api call returns XML
+                       $tii2['session-id'] = $tiisession;
+
                        //$tii2['diagnostic'] = '1';
                        $tii2['fid']      = TURNITIN_CREATE_USER; //set command. - create user and login student to Turnitin (fid=1)
                        if (tii_post_to_api($tii2, 11, 'GET', $file)) {
@@ -571,6 +578,7 @@ function tii_send_files() {
                        }
                    }
                } //done all that is needed for tii submission..
+               turnitin_end_session($tiisession);
            }
        }
        mtrace("sent ".$count." files");
@@ -982,3 +990,56 @@ function plagiarism_get_css_rank ($score) {
             }
         }
     }
+
+/**
+ * Function that starts Turnitin session - some api calls require this
+ *
+ * @param object  $plagiarismsettings - from a call to plagiarism_get_settings
+ * @return string - Turnitin sessionid
+ */
+function turnitin_start_session() {
+    $tiisettings = tii_get_settings();
+    $tii = array();
+    //set globals.
+    $tii['utp']      = TURNITIN_STUDENT;
+    $tii['username'] = $tiisettings['turnitin_userid'];
+    $tii['uem']      = $tiisettings['turnitin_email'];
+    $tii['ufn']      = $tiisettings['turnitin_firstname'];
+    $tii['uln']      = $tiisettings['turnitin_lastname'];
+    $tii['uid']      = $tiisettings['turnitin_userid'];
+
+    $tii['fcmd']     = TURNITIN_RETURN_XML;
+    $tii['fid']      = TURNITIN_START_SESSION;
+    $content = tii_get_url($tii);
+    $tiixml = tii_get_xml($content);
+    if (isset($tiixml->sessionid[0])) {
+        return $tiixml->sessionid[0];
+    } else {
+        return '';
+    }
+}
+/**
+ * Function that ends a Turnitin session
+ *
+ * @param object  $plagiarismsettings - from a call to plagiarism_get_settings
+ * @param string - Turnitin sessionid - from a call to turnitin_start_session
+ */
+
+function turnitin_end_session($tiisession) {
+    if (empty($tiisession)) {
+        return;
+    }
+    $tiisettings = tii_get_settings();
+    $tii = array();
+    //set globals.
+    $tii['utp']      = TURNITIN_STUDENT;
+    $tii['username'] = $tiisettings['turnitin_userid'];
+    $tii['uem']      = $tiisettings['turnitin_email'];
+    $tii['ufn']      = $tiisettings['turnitin_firstname'];
+    $tii['uln']      = $tiisettings['turnitin_lastname'];
+    $tii['uid']      = $tiisettings['turnitin_userid'];
+    $tii['fcmd']     = TURNITIN_RETURN_XML;
+    $tii['fid']      = TURNITIN_END_SESSION;
+    $tii['session-id'] = $tiisession;
+    $tiixml = tii_get_xml(tii_get_url($tii));
+}
