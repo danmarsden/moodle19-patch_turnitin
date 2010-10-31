@@ -41,10 +41,6 @@ class turnitin_form extends moodleform {
         $mform->addElement('static','turnitin_emailprefix_description', '', get_string('configtiiemailprefix', 'turnitin'));
         $mform->disabledIf('turnitin_emailprefix', 'turnitin_senduseremail', 'checked');
          
-        $mform->addElement('text', 'turnitin_courseprefix', get_string('tiicourseprefix', 'turnitin'));
-        $mform->addElement('static','turnitin_courseprefix_description', '', get_string('configtiicourseprefix', 'turnitin'));
-        $mform->addRule('turnitin_courseprefix', null, 'required', null, 'client');
-
         $mform->addElement('text', 'turnitin_userid', get_string('username'));
         $mform->addElement('static','turnitin_userid_description', '', get_string('configtiiuserid', 'turnitin'));
         $mform->addRule('turnitin_userid', null, 'required', null, 'client');
