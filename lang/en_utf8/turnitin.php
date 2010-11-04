@@ -102,7 +102,7 @@ $string['turnitin_institutionnode'] = 'Enable Institution Node';
 $string['turnitin_institutionnode_help'] = 'If you have setup/purchased an institution node with your account enable this to allow the node to be selected when creating assignments. NOTE: if you do not have an institution node, enabling this setting will cause your paper submission to fail.';
 $string['useturnitin'] ='Enable Turnitin';
 $string['wordcount'] = 'Word count';
-
+$string['resetall'] = 'Reset All';
 
 $string['configtiiapi'] = 'This is the address of the Turnitin API - usually https://api.turnitin.com/api.asp';
 $string['configusetii'] = 'NOTE: you must enable TII in each respective module as well.';
