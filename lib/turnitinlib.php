@@ -475,6 +475,8 @@ function tii_send_files() {
                             $tii['internet_check']    = (isset($plagiarismvalues['plagiarism_compare_internet']) ? $plagiarismvalues['plagiarism_compare_internet'] : '1');
                             $tii['journal_check']     = (isset($plagiarismvalues['plagiarism_compare_journals']) ? $plagiarismvalues['plagiarism_compare_journals'] : '1');
                             $tii['report_gen_speed']  = (isset($plagiarismvalues['plagiarism_report_gen']) ? $plagiarismvalues['plagiarism_report_gen'] : '1');
+                            $tii['exclude_biblio'] = (isset($plagiarismvalues['plagiarism_exclude_biblio']) ? $plagiarismvalues['plagiarism_exclude_biblio'] : '0');
+                            $tii['exclude_quoted'] = (isset($plagiarismvalues['plagiarism_exclude_quoted']) ? $plagiarismvalues['plagiarism_exclude_quoted'] : '0');
                             $tii['exclude_type']      = (isset($plagiarismvalues['plagiarism_exclude_matches']) ? $plagiarismvalues['plagiarism_exclude_matches'] : '0');
                             $tii['exclude_value']     = (isset($plagiarismvalues['plagiarism_exclude_matches_value']) ? $plagiarismvalues['plagiarism_exclude_matches_value'] : '');
                             //$tii['diagnostic'] = '1'; //debug only - uncomment when using in production.
@@ -823,12 +825,15 @@ function plagiarism_get_css_rank ($score) {
                 }
             }
             //TODO: convert use of course/instance to cm so that we can use exclude biblio/quoted.
-            /*
-            //check if files have already been submitted and disable exclude biblio and quoted if turnitin is enabled.
-            /if (record_exists('tii_files', 'cm', $cmid)) {
-                $mform->disabledIf('plagiarism_exclude_biblio','use_turnitin');
-                $mform->disabledIf('plagiarism_exclude_quoted','use_turnitin');
-            }*/
+            if (!empty($cmid)) {
+                //get full cm
+                $cm = get_record('course_modules', 'id', $cmid);
+                //check if files have already been submitted and disable exclude biblio and quoted if turnitin is enabled.
+                if (record_exists('tii_files', 'course', $cm->course, 'module', $cm->module, 'instance', $cm->instance)) {
+                    $mform->disabledIf('plagiarism_exclude_biblio','use_turnitin');
+                    $mform->disabledIf('plagiarism_exclude_quoted','use_turnitin');
+                }
+            }
         } else { //add plagiarism settings as hidden vars.
             foreach ($plagiarismelements as $element) {
                 $mform->addElement('hidden', $element);
@@ -896,13 +901,12 @@ function plagiarism_get_css_rank ($score) {
         }
         $mform->addElement('select', 'plagiarism_report_gen', get_string("reportgen", "turnitin"), $reportgenoptions);
         $mform->setHelpButton('plagiarism_report_gen', array('reportgen', get_string('reportgen', 'turnitin'),'turnitin'));
-        //TODO: convert use of course/instance to cm so that we can use exclude biblio/quoted.
-        /*
-        $mform->addElement('select', 'plagiarism_exclude_biblio', get_string("excludebiblio", "plagiarism_turnitin"), $ynoptions);
-        $mform->setHelpButton('plagiarism_exclude_biblio', array('excludebiblio', get_string('excludebiblio', 'plagiarism_turnitin'),'plagiarism_turnitin'));
-        $mform->addElement('select', 'plagiarism_exclude_quoted', get_string("excludequoted", "plagiarism_turnitin"), $ynoptions);
-        $mform->setHelpButton('plagiarism_exclude_quoted', array('excludequoted', get_string('excludequoted', 'plagiarism_turnitin'),'plagiarism_turnitin'));
-        */
+
+        $mform->addElement('select', 'plagiarism_exclude_biblio', get_string("excludebiblio", "turnitin"), $ynoptions);
+        $mform->setHelpButton('plagiarism_exclude_biblio', array('excludebiblio', get_string('excludebiblio', 'turnitin'),'turnitin'));
+        $mform->addElement('select', 'plagiarism_exclude_quoted', get_string("excludequoted", "turnitin"), $ynoptions);
+        $mform->setHelpButton('plagiarism_exclude_quoted', array('excludequoted', get_string('excludequoted', 'turnitin'),'turnitin'));
+
         $mform->addElement('select', 'plagiarism_exclude_matches', get_string("excludematches", "turnitin"), $excludetype);
         $mform->setHelpButton('plagiarism_exclude_matches', array('excludematches', get_string('excludematches', 'turnitin'),'turnitin'));
         $mform->addElement('text', 'plagiarism_exclude_matches_value', '');
