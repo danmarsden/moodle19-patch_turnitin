@@ -913,7 +913,19 @@ function plagiarism_get_css_rank ($score) {
         $mform->addRule('plagiarism_exclude_matches_value', null, 'numeric', null, 'client');
         $mform->disabledIf('plagiarism_exclude_matches_value', 'plagiarism_exclude_matches', 'eq', 0);
     }
-    function plagiarism_get_links($userid, $file, $cmid, $course, $module) {
+    /**
+* generates a url to allow access to a similarity report.
+*
+* @param integer $userid - userid of user who owns the file.
+* @param object $file - single record from turnitin_files table
+* @param object $course - usually global $COURSE value
+* @param integer $cmid - course module id
+* @param object $module - full module recor (eg assignment table)
+* @param boolean $ignoreuserchecks - ignores Global User/capability checks.(BE VERY CAREFUL!) - uses assignment settings to decide what to display.
+
+* @return string - url to allow login/viewing of a similarity report
+*/
+    function plagiarism_get_links($userid, $file, $cmid, $course, $module, $ignoreuserchecks=false) {
         global $CFG, $USER;
 
         $plagiarismvalues = get_records_menu('plagiarism_config', 'cm',$cmid,'','name,value');
@@ -925,7 +937,7 @@ function plagiarism_get_css_rank ($score) {
         $output = '';
 
         //check if this is a user trying to look at their details, or a teacher with viewsimilarityscore rights.
-        if (($USER->id == $userid) || has_capability('moodle/local:viewsimilarityscore', $modulecontext)) {
+        if (($USER->id == $userid) || has_capability('moodle/local:viewsimilarityscore', $modulecontext) || $ignoreuserchecks) {
             if ($plagiarismsettings = get_settings()) {
                 $plagiarismfile = get_record_select('tii_files', "course='".$course->id.
                                                     "' AND module='".get_field('modules', 'id','name','assignment').
@@ -943,7 +955,7 @@ function plagiarism_get_css_rank ($score) {
                     }
                     $assignclosed = false;
                     $rank = plagiarism_get_css_rank($plagiarismfile->tiiscore);
-                    if ($USER->id <> $userid) { //this is a teacher with moodle/plagiarism_turnitin:viewsimilarityscore
+                    if ($USER->id <> $userid && !$ignoreuserchecks) { //this is a teacher with moodle/plagiarism_turnitin:viewsimilarityscore
                         if (has_capability('moodle/local:viewfullreport', $modulecontext)) {
                             $output .= '<span class="plagiarismreport"><a href="'.tii_get_report_link($plagiarismfile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a><span class="'.$rank.'">'.$plagiarismfile->tiiscore.'%</span></span>';
                         } else {
