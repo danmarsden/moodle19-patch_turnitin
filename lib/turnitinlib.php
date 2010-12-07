@@ -948,12 +948,11 @@ function plagiarism_get_css_rank ($score) {
                     //check for open mod.
                     $assignclosed = false;
                     $time = time();
-                    if (!empty($module->preventlate) && !empty($module->timedue)) {
+                    if (!empty($module->timedue)) {
                         $assignclosed = ($module->timeavailable <= $time && $time <= $module->timedue);
                     } elseif (!empty($module->timeavailable)) {
                         $assignclosed = ($module->timeavailable <= $time);
                     }
-                    $assignclosed = false;
                     $rank = plagiarism_get_css_rank($plagiarismfile->tiiscore);
                     if ($USER->id <> $userid && !$ignoreuserchecks) { //this is a teacher with moodle/plagiarism_turnitin:viewsimilarityscore
                         if (has_capability('moodle/local:viewfullreport', $modulecontext)) {
