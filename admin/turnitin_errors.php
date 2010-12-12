@@ -85,7 +85,7 @@
     }
 
 
-        $tablecolumns = array('name', 'course', 'file', 'tiicode');
+        $tablecolumns = array('lastname', 'course', 'file', 'tiicode');
         $tableheaders = array(get_string('name'),
                               get_string('course'),
                               get_string('file'),
@@ -117,7 +117,6 @@
 
         $table->sortable(true);
         $table->no_sorting('file');
-        $table->no_sorting('name');
 
         $table->setup();
 
@@ -126,8 +125,13 @@
         if ($sort = $table->get_sql_sort()) {
             $sort = ' ORDER BY '.$sort;
         }
-        $sql = "tiicode <>'success' AND tiicode<>'pending' AND tiicode<>'51'";
-        $tiifiles = get_records_select('tii_files', $sql.$sort);
+        $sql = "SELECT t.id as id,t.tiicode as tiicode, t.filename as filename, u.firstname, u.lastname, u.id as userid, ".
+               "c.shortname as course FROM ".
+               "{$CFG->prefix}tii_files t, {$CFG->prefix}user u, {$CFG->prefix}course c ".
+               "WHERE c.id=t.course AND t.userid=u.id ".
+               "AND tiicode <>'success' AND tiicode <>'pending' AND tiicode <> '51'";
+
+        $tiifiles = get_records_sql($sql.$sort);
         if (!empty($tiifiles)) {
         $pagesize = 15;
         $table->pagesize($pagesize, count($tiifiles));
@@ -138,9 +142,9 @@
                 //should tidy these up - shouldn't need to call so often
                 $reset = $tiifile->tiicode.'&nbsp;<a href="turnitin_errors.php?reset=1&fileid='.$tiifile->id.'">reset</a> | '.
                 '<a href="turnitin_errors.php?delete=1&fileid='.$tiifile->id.'">'.get_string('delete').'</a>';
-                $user = get_record('user', 'id', $tiifile->userid);
-                $course = get_record('course', 'id', $tiifile->course);
-                $row = array(fullname($user), $course->shortname, $tiifile->filename, $reset);
+                $user->firstname = $tiifile->firstname;
+                $user->lastname = $tiifile->lastname;
+                $row = array(fullname($user), $tiifile->course, $tiifile->filename, $reset);
 
                 $table->add_data($row);
             }
