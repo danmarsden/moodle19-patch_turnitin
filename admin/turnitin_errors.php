@@ -12,7 +12,11 @@
 
     $fileid = optional_param('fileid',0,PARAM_INT);
     $resetuser = optional_param('reset',0,PARAM_INT);
+    $delete = optional_param('delete',0,PARAM_INT);
     $page = optional_param('page', 0, PARAM_INT);
+    $sort = optional_param('tsort', '', PARAM_ALPHA);
+    $dir = optional_param('dir', '', PARAM_ALPHA);
+    $confirm = optional_param('confirm', 0, PARAM_INT);
 
     admin_externalpage_print_header();
     print_heading(get_string('turnitinerrors', 'turnitin'));
@@ -50,6 +54,19 @@
     }
     print_box(get_string('tiiexplainerrors', 'turnitin'));
 
+    if ($delete == 1 && $fileid) {
+        if (empty($confirm)) {
+           notice_yesno("are you sure you want to delete this entry? - this means that Turnitin will NOT process this file.",
+                        'turnitin_errors.php?delete=1&fileid='.$fileid.'&amp;confirm=1',
+                         'turnitin_errors.php');
+           admin_externalpage_print_footer();
+           exit;
+        } else {
+            delete_records('tii_files', 'id', $fileid);
+            notify("File removed");
+        }
+    }
+
     if ($resetuser==1 && $fileid) {
         $tfile = get_record('tii_files', 'id', $fileid);
         $tfile->tiicode = 'pending';
@@ -67,7 +84,8 @@
         }
     }
 
-        $tablecolumns = array('name', 'course', 'file', 'status');
+
+        $tablecolumns = array('name', 'course', 'file', 'tiicode');
         $tableheaders = array(get_string('name'),
                               get_string('course'),
                               get_string('file'),
@@ -78,7 +96,7 @@
 
         $table->define_columns($tablecolumns);
         $table->define_headers($tableheaders);
-        $table->define_baseurl($CFG->wwwroot.'/admin/turnitin_errors.php');
+        $table->define_baseurl($CFG->wwwroot.'/admin/turnitin_errors.php?page='.$page);
 
         $table->sortable(false);
         $table->collapsible(true);
@@ -97,15 +115,19 @@
         $table->set_attribute('width', '100%');
         //$table->set_attribute('align', 'center');
 
-        $table->no_sorting('name');
-        $table->no_sorting('course');
+        $table->sortable(true);
         $table->no_sorting('file');
-        $table->no_sorting('status');
+        $table->no_sorting('name');
 
         $table->setup();
 
+        //now do sorting if specified
+        $sort = '';
+        if ($sort = $table->get_sql_sort()) {
+            $sort = ' ORDER BY '.$sort;
+        }
         $sql = "tiicode <>'success' AND tiicode<>'pending' AND tiicode<>'51'";
-        $tiifiles = get_records_select('tii_files', $sql);
+        $tiifiles = get_records_select('tii_files', $sql.$sort);
         if (!empty($tiifiles)) {
         $pagesize = 15;
         $table->pagesize($pagesize, count($tiifiles));
@@ -114,7 +136,8 @@
         if (!empty($pagtiifiles)) {
             foreach($pagtiifiles as $tiifile) {
                 //should tidy these up - shouldn't need to call so often
-                $reset = $tiifile->tiicode.'&nbsp;<a href="turnitin_errors.php?reset=1&fileid='.$tiifile->id.'">reset</a>';
+                $reset = $tiifile->tiicode.'&nbsp;<a href="turnitin_errors.php?reset=1&fileid='.$tiifile->id.'">reset</a> | '.
+                '<a href="turnitin_errors.php?delete=1&fileid='.$tiifile->id.'">'.get_string('delete').'</a>';
                 $user = get_record('user', 'id', $tiifile->userid);
                 $course = get_record('course', 'id', $tiifile->course);
                 $row = array(fullname($user), $course->shortname, $tiifile->filename, $reset);
