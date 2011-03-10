@@ -484,7 +484,7 @@ function tii_send_files() {
 
                             if ($tiixml->rcode[0]==TURNITIN_RESP_ASSIGN_EXISTS) { //if assignment already exists then update it and set externalassignid correctly
                                 $tii['fcmd'] = TURNITIN_UPDATE_RETURN_XML; //when set to 3 - it updates the course
-                                $tiixml = turnitin_post_data($tii);
+                                $tiixml = tii_post_data($tii);
                             }
                             if ($tiixml->rcode[0]==TURNITIN_RESP_ASSIGN_CREATED) {
                                 //save assid for use later.
