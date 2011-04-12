@@ -100,7 +100,9 @@ function scorm_update_instance($scorm) {
     $scorm->timemodified = time();
     $scorm->id = $scorm->instance;
 
-    $scorm = scorm_option2text($scorm);
+    if (empty($scorm->options)) {
+        $scorm = scorm_option2text($scorm);
+    }
     $scorm->width = str_replace('%','',$scorm->width);
     $scorm->height = str_replace('%','',$scorm->height);
 
@@ -343,7 +345,7 @@ function scorm_user_complete($course, $user, $mod, $scorm) {
                             $report .= "\t\t\t<li><ul class='$liststyle'>\n";
                             foreach($usertrack as $element => $value) {
                                 if (substr($element,0,3) == 'cmi') {
-                                    $report .= '<li>'.$element.' => '.$value.'</li>';
+                                    $report .= '<li>'.$element.' => '.s($value).'</li>';
                                 }
                             }
                             $report .= "\t\t\t</ul></li>\n";

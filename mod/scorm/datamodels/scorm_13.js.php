@@ -74,7 +74,7 @@ function SCORMapi1_3() {
     var CMIDecimal = '^-?([0-9]{1,5})(\\.[0-9]{1,18})?$';
     var CMIIdentifier = '^\\S{0,250}[a-zA-Z0-9]$';
     var CMIShortIdentifier = '^[\\w\.]{1,250}$';
-    var CMILongIdentifier = '^\\S{0,4000}[a-zA-Z0-9]$';
+    var CMILongIdentifier = '^\\S{0,4000}$';
     var CMIFeedback = '^.*$'; // This must be redefined
     var CMIIndex = '[._](\\d+).';
     var CMIIndexStore = '.N(\\d+).';
@@ -88,14 +88,14 @@ function SCORMapi1_3() {
     var NAVBoolean = '^unknown$|^true$|^false$';
     var NAVTarget = '^previous$|^continue$|^choice.{target=\\S{0,200}[a-zA-Z0-9]}$'
     // Children lists
-    var cmi_children = '_version, comments_from_learner, comments_from_lms, completion_status, credit, entry, exit, interactions, launch_data, learner_id, learner_name, learner_preference, location, max_time_allowed, mode, objectives, progress_measure, scaled_passing_score, score, session_time, success_status, suspend_data, time_limit_action, total_time';
-    var comments_children = 'comment, timestamp, location';
-    var score_children = 'max, raw, scaled, min';
-    var objectives_children = 'progress_measure, completion_status, success_status, description, score, id';
+    var cmi_children = '_version,comments_from_learner,comments_from_lms,completion_status,credit,entry,exit,interactions,launch_data,learner_id,learner_name,learner_preference,location,max_time_allowed,mode,objectives,progress_measure,scaled_passing_score,score,session_time,success_status,suspend_data,time_limit_action,total_time';
+    var comments_children = 'comment,timestamp,location';
+    var score_children = 'max,raw,scaled,min';
+    var objectives_children = 'progress_measure,completion_status,success_status,description,score,id';
     var correct_responses_children = 'pattern';
-    var student_data_children = 'mastery_score, max_time_allowed, time_limit_action';
-    var student_preference_children = 'audio_level, audio_captioning, delivery_speed, language';
-    var interactions_children = 'id, type, objectives, timestamp, correct_responses, weighting, learner_response, result, latency, description';
+    var student_data_children = 'mastery_score,max_time_allowed,time_limit_action';
+    var student_preference_children = 'audio_level,audio_captioning,delivery_speed,language';
+    var interactions_children = 'id,type,objectives,timestamp,correct_responses,weighting,learner_response,result,latency,description';
     // Data ranges
     var scaled_range = '-1#1';
     var audio_range = '0#*';
@@ -577,9 +577,6 @@ function SCORMapi1_3() {
                                                                 nodes = value.split(correct_responses[interactiontype].delimiter);
                                                             } else {
                                                                 nodes[0] = value;
-                                                            }
-                                                            if (interactiontype == 'choice' && nodes.length == 1) {
-                                                              alert('not enough choices: ' + element);
                                                             }
                                                             if ((nodes.length > 0) && (nodes.length <= correct_responses[interactiontype].max)) {
                                                                 errorCode = CRcheckValueNodes (element, interactiontype, nodes, value, errorCode);

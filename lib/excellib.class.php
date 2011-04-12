@@ -122,7 +122,16 @@ class MoodleExcelWorksheet {
      */
     function MoodleExcelWorksheet($name, &$workbook, $latin_output=false) {
 
-    /// Internally, add one sheet to the workbook    
+        if (strlen($name) > 31) {
+            // Excel does not seem able to cope with sheet names > 31 chars.
+            // With $latin_output = false, it does not cope at all.
+            // With $latin_output = true it is supposed to work, but in our experience,
+            // it doesn't. Therefore, truncate in all circumstances.
+            $textlib = textlib_get_instance();
+            $name = $textlib->substr($name, 0, 31);
+        }
+
+    /// Internally, add one sheet to the workbook
         $this->pear_excel_worksheet =& $workbook->addWorksheet($name);
         $this->latin_output = $latin_output;
     /// Set encoding to UTF-16LE 
@@ -196,7 +205,13 @@ class MoodleExcelWorksheet {
         $format = $this->MoodleExcelFormat2PearExcelFormat($format);
     /// Convert the date to Excel format
         $timezone = get_user_timezone_offset();
-        $value =  ((usertime($date) + (int)($timezone * HOURSECS * 2)) / 86400) + 25569;
+        if ($timezone == 99) {
+            // system timezone offset in seconds
+            $offset = (int)date('Z');
+        } else {
+            $offset = (int)($timezone * HOURSECS * 2);
+        }
+        $value = ((usertime($date) + $offset) / 86400) + 25569;
     /// Add  the date safely to the PEAR Worksheet
         $this->pear_excel_worksheet->writeNumber($row, $col, $value, $format);
     }

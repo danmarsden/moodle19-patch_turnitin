@@ -567,15 +567,18 @@ function clean_param($param, $type) {
             }
 
         case PARAM_TAG:
+            // Please note it is not safe to use the tag name directly anywhere,
+            // it must be processed with s(), urlencode() before embedding anywhere.
+            // remove some nasties
+            $param = preg_replace('~[[:cntrl:]]|[<>`]~u', '', $param);
             //as long as magic_quotes_gpc is used, a backslash will be a
-            //problem, so remove *all* backslash.
+            //problem, so remove *all* backslash - BUT watch out for SQL injections caused by this sloppy design (skodak)
             $param = str_replace('\\', '', $param);
             //convert many whitespace chars into one
             $param = preg_replace('/\s+/', ' ', $param);
             $textlib = textlib_get_instance();
             $param = $textlib->substr(trim($param), 0, TAG_MAX_LENGTH);
             return $param;
-
 
         case PARAM_TAGLIST:
             $tags = explode(',', $param);
@@ -2978,7 +2981,7 @@ function create_user_record($username, $password, $auth='manual') {
     $newuser->mnethostid = $CFG->mnet_localhost_id;
 
     if (insert_record('user', $newuser)) {
-        $user = get_complete_user_data('username', $newuser->username);
+        $user = get_complete_user_data('username', $newuser->username, $CFG->mnet_localhost_id);
         if(!empty($CFG->{'auth_'.$newuser->auth.'_forcechangepassword'})){
             set_user_preference('auth_forcepasswordchange', 1, $user->id);
         }
@@ -2995,17 +2998,19 @@ function create_user_record($username, $password, $auth='manual') {
  * @param string $username New user's username to add to record
  * @return user A {@link $USER} object
  */
-function update_user_record($username, $authplugin) {
+function update_user_record($username, $unused) {
+    global $CFG;
+
     $username = trim(moodle_strtolower($username)); /// just in case check text case
 
-    $oldinfo = get_record('user', 'username', $username, '','','','', 'username, auth');
+    $oldinfo = get_record('user', 'username', $username, 'mnethostid', $CFG->mnet_localhost_id, '','', 'id, username, auth');
     $userauth = get_auth_plugin($oldinfo->auth);
 
     if ($newinfo = $userauth->get_userinfo($username)) {
         $newinfo = truncate_userinfo($newinfo);
         foreach ($newinfo as $key => $value){
-            if ($key === 'username') {
-                // 'username' is not a mapped updateable/lockable field, so skip it.
+            if ($key === 'username' or $key === 'id' or $key === 'auth' or $key === 'mnethostid' or $key === 'deleted') {
+                // these fields must not be changed
                 continue;
             }
             $confval = $userauth->config->{'field_updatelocal_' . $key};
@@ -3022,14 +3027,14 @@ function update_user_record($username, $authplugin) {
                 // nothing_ for this field. Thus it makes sense to let this value
                 // stand in until LDAP is giving a value for this field.
                 if (!(empty($value) && $lockval === 'unlockedifempty')) {
-                    set_field('user', $key, $value, 'username', $username)
+                    set_field('user', $key, $value, 'id', $oldinfo->id)
                         || error_log("Error updating $key for $username");
                 }
             }
         }
     }
 
-    return get_complete_user_data('username', $username);
+    return get_complete_user_data('username', $username, $CFG->mnet_localhost_id);
 }
 
 function truncate_userinfo($info) {
@@ -6426,12 +6431,16 @@ function check_php_version($version='4.1.0') {
           break;
 
       case 'Safari':  /// Safari
-          // Look for AppleWebKit, excluding strings with OmniWeb, Shiira and SimbianOS
+          // Look for AppleWebKit, excluding strings with OmniWeb, Shiira and SymbianOS
           if (strpos($agent, 'OmniWeb')) { // Reject OmniWeb
               return false;
           } elseif (strpos($agent, 'Shiira')) { // Reject Shiira
               return false;
-          } elseif (strpos($agent, 'SimbianOS')) { // Reject SimbianOS
+          } elseif (strpos($agent, 'SymbianOS')) { // Reject SymbianOS
+              return false;
+          }
+          if (strpos($agent, 'iPhone') or strpos($agent, 'iPad') or strpos($agent, 'iPod')) {
+              // No Apple mobile devices here - editor does not work, course ajax is not touch compatible, etc.
               return false;
           }
 
@@ -6528,6 +6537,8 @@ function can_use_html_editor() {
             return 'MSIE';
         } else if (check_browser_version('Gecko', 20030516)) {
             return 'Gecko';
+        } else if (check_browser_version('Safari', 531)) {
+            return 'AppleWebKit';
         }
     }
     return false;
