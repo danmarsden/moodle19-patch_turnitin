@@ -58,6 +58,14 @@ class turnitin_form extends moodleform {
         $mform->addElement('static','turnitin_lastname_description', '', get_string('configtiilastname', 'turnitin'));
         $mform->addRule('turnitin_lastname', null, 'required', null, 'client'); 
 
+        $mform->addElement('text', 'turnitin_attemptcodes', get_string('turnitin_attemptcodes', 'plagiarism_turnitin'));
+        $mform->setDefault('turnitin_attemptcodes', '1009,1013,1023');
+
+        $mform->addElement('text', 'turnitin_attempts', get_string('turnitin_attempts', 'plagiarism_turnitin'));
+        $mform->addRule('turnitin_attempts', null, 'numeric', null, 'client');
+        $mform->addRule('turnitin_attempts', null, 'maxlength', 1, 'client');
+        $mform->setDefault('turnitin_attempts', '1');
+
         $mform->addElement('textarea', 'turnitin_student_disclosure', get_string('studentdisclosure','turnitin'),'wrap="virtual" rows="6" cols="50"');
         $mform->addElement('static','turnitin_student_disclosure_description', '', get_string('configstudentdisclosure','turnitin'));
         $mform->setDefault('turnitin_student_disclosure', get_string('studentdisclosuredefault','turnitin'));

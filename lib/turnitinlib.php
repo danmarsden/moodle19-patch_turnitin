@@ -585,6 +585,30 @@ function tii_send_files() {
            }
        }
        mtrace("sent ".$count." files");
+       //now check for files that need to be retried.
+       require_once("$CFG->dirroot/mod/assignment/lib.php");
+        //get list of files that need to be resubmitted - sanity check against cm
+        if (!empty($tiisettings['turnitin_attempts']) && is_numeric($tiisettings['turnitin_attempts'])
+            && !empty($tiisettings['turnitin_attemptcodes'])) {
+            $acin = '';
+            $acodes = explode(',',trim($tiisettings['turnitin_attemptcodes']));
+            foreach ($acodes as $ac) {
+                if (!empty($acin)) {
+                    $acin .=',';
+                }
+                $acin .= (int)$ac;
+            }
+            $sql = "SELECT tf.*
+                    FROM {turnitin_files} tf, {course_modules} cm
+                    WHERE tf.cm = cm.id AND
+                    tf.statuscode IN (".$acin.") AND tf.attempt < ".$tiisettings['turnitin_attempts'];
+            $items = get_records_sql($sql);
+            foreach ($items as $item) {
+                $item->tiicode = 'pending';
+                $item->attempt = $item->attempt+1;
+                update_record('tii_files', $item);
+            }
+        }
    }
 }
 
