@@ -67,6 +67,15 @@ function xmldb_local_upgrade($oldversion) {
         $result = $result && drop_field($table, $field);
     }
 
+    if ($result && $oldversion < 2011041200) {
+        $table = new XMLDBTable('tii_files');
+        $field = new XMLDBField('attempt');
+        $field->setAttributes(XMLDB_TYPE_INTEGER, '5', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null, null, 0, 'tiiscore');
+        if (!field_exists($table, $field)) {
+            $result = $result && add_field($table, $field);
+        }
+    }
+
     return $result;
 
 }
