@@ -596,12 +596,11 @@ function tii_send_files() {
                 if (!empty($acin)) {
                     $acin .=',';
                 }
-                $acin .= (int)$ac;
+                $acin .= "'".(int)$ac."'";
             }
-            $sql = "SELECT tf.*
-                    FROM {turnitin_files} tf, {course_modules} cm
-                    WHERE tf.cm = cm.id AND
-                    tf.statuscode IN (".$acin.") AND tf.attempt < ".$tiisettings['turnitin_attempts'];
+            $sql = "SELECT *
+                    FROM ".$CFG->prefix."tii_files
+                    WHERE tiicode IN (".$acin.") AND attempt < ".$tiisettings['turnitin_attempts'];
             $items = get_records_sql($sql);
             foreach ($items as $item) {
                 $item->tiicode = 'pending';
