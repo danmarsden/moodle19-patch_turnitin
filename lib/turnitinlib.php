@@ -441,9 +441,16 @@ function tii_send_files() {
                                 $tii['assignid']   = $plagiarismvalues['turnitin_assignid'];
                                 $tii['fcmd'] = TURNITIN_UPDATE_RETURN_XML;
                                 if (empty($module->timeavailable)) {
-                                    $dtstart = time()+60*60;
+                                    $dtstart = get_field('plagiarism_config', 'value', 'cm', $cm->id, 'name','turnitin_dtstart');
+                                    if (empty($dtstart)) {
+                                        $dtstart = time()+60*60;
+                                        $configval = new stdclass();
+                                        $configval->cm = $cm->id;
+                                        $configval->name = 'turnitin_dtstart';
+                                        $configval->value = $dtstart;
+                                        insert_record('plagiarism_config', $configval);
+                                    }
                                     $tii['dtstart'] = rawurlencode(date('Y-m-d H:i:s', $dtstart));
-
                                 } else {
                                     $tii['dtstart']  = rawurlencode(date('Y-m-d H:i:s', $module->timeavailable));
                                     $dtstart = $module->timeavailable;
