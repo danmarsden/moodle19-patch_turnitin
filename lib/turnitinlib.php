@@ -980,7 +980,7 @@ function plagiarism_get_css_rank ($score) {
                     $assignclosed = false;
                     $time = time();
                     if (!empty($module->timedue)) {
-                        $assignclosed = ($module->timeavailable <= $time && $time <= $module->timedue);
+                        $assignclosed = ($time >= $module->timedue);
                     } elseif (!empty($module->timeavailable)) {
                         $assignclosed = ($module->timeavailable <= $time);
                     }
