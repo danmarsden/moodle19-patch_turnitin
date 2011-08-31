@@ -76,6 +76,18 @@ function xmldb_local_upgrade($oldversion) {
         }
     }
 
+    if ($oldversion < 2011083100) {
+        // Define field apimd5 to be added to turnitin_files
+        $table = new XMLDBTable('tii_files');
+        $field = new XMLDBField('apimd5');
+        $field->setAttributes(XMLDB_TYPE_CHAR, '255', null, null, null, null, null, null, 'attempt');
+
+        // Conditionally launch add field apimd5
+        if (!field_exists($table, $field)) {
+            $result = $result && add_field($table, $field);
+        }
+    }
+
     return $result;
 
 }

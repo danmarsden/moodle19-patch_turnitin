@@ -15,7 +15,8 @@
         <FIELD NAME="tii" TYPE="text" LENGTH="small" NOTNULL="false" SEQUENCE="false" ENUM="false" PREVIOUS="filename" NEXT="tiicode"/>
         <FIELD NAME="tiicode" TYPE="char" LENGTH="10" NOTNULL="false" SEQUENCE="false" ENUM="false" PREVIOUS="tii" NEXT="tiiscore"/>
         <FIELD NAME="tiiscore" TYPE="int" LENGTH="5" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" ENUM="false" PREVIOUS="tiicode" NEXT="attempt"/>
-        <FIELD NAME="attempt" TYPE="int" LENGTH="5" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" ENUM="false" PREVIOUS="tiiscore"/>
+        <FIELD NAME="attempt" TYPE="int" LENGTH="5" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" ENUM="false" PREVIOUS="tiiscore" NEXT="apimd5"/>
+        <FIELD NAME="apimd5" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="This is the md5 used in the last api call to Turnitin" PREVIOUS="attempt"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id" />

@@ -65,7 +65,7 @@ define('TURNITIN_RESP_PAPER_SENT', 51); // paper submitted
 define('TURNITIN_RESP_SCORE_RECEIVED', 61); // Originality score retrieved.
 define('TURNITIN_RESP_ASSIGN_EXISTS', 419); // Assignment already exists.
 
-function tii_get_url($tii, $returnArray=false) {
+function tii_get_url($tii, $returnArray=false, $pid='') {
     global $CFG;
     $tiisettings = get_records_menu('config_plugins', 'plugin', 'tii', '', 'name,value');
 
@@ -168,7 +168,13 @@ function tii_get_url($tii, $returnArray=false) {
     }
 
     $tii['md5'] = tii_get_md5string($tiimd5);
-
+    if (!empty($pid) &&!empty($tii['md5'])) {
+        //save this md5 into the record.
+        $tiifile = new stdClass();
+        $tiifile->id = $pid;
+        $tiifile->apimd5 = $tii['md5'];
+        update_record('tii_files', $tiifile);
+    }
     if ($returnArray) {
         return $tii;
     } else {
@@ -238,8 +244,8 @@ function tii_get_xml($url) {
     }
 }
 
-function tii_post_data($tii, $file='') {
-    $tiicomplete = tii_get_url($tii, 'array');
+function tii_post_data($tii, $file='', $pid='') {
+    $tiicomplete = tii_get_url($tii, 'array', $pid);
 
     $tiisettings = get_records_menu('config_plugins', 'plugin', 'tii', '', 'name,value');
 
@@ -266,7 +272,7 @@ function tii_post_data($tii, $file='') {
 
 //$tii is an array of vars needed to submit to the TII API
 //$success is a integer with expected ID on success of this post.
-function tii_post_to_api($tii, $success, $action='GET', $file='', $savercode='true', $returncode=false) {
+function tii_post_to_api($tii, $success, $action='GET', $file='', $savercode=true, $returncode=false) {
     $tiixml = '';
     if (isset($tii['diagnostic']) AND $tii['diagnostic']) { // if in diagnostic mode, print the url used.
         debugging(tii_get_url($tii));
@@ -274,11 +280,11 @@ function tii_post_to_api($tii, $success, $action='GET', $file='', $savercode='tr
     } else {
         switch ($action) {
             case 'GET':
-                $tiixml = tii_get_xml(tii_get_url($tii)); //get xml to work with
+                $tiixml = tii_get_xml(tii_get_url($tii, false, $file->id)); //get xml to work with
                 break;
             case 'POST':
                 if (!empty($file)) {
-                    $tiixml = tii_post_data($tii, $file->fileinfo->filepath.$file->filename);
+                    $tiixml = tii_post_data($tii, $file->fileinfo->filepath.$file->filename, $file->id);
                 } else {
                     $tiixml = tii_post_data($tii);
                 }
@@ -418,7 +424,7 @@ function tii_send_files() {
                             $tii['cid']      = "c_".time().rand(10,5000); //some unique random id only used once.
                             $tii['fcmd'] = TURNITIN_RETURN_XML;
                             $tii['fid']  = TURNITIN_CREATE_CLASS; // create class under the given account and assign above user as instructor (fid=2)
-                            $tiixml = tii_get_xml(tii_get_url($tii));
+                            $tiixml = tii_get_xml(tii_get_url($tii, false, $file->id));
                             if (!empty($tiixml->rcode[0]) && ($tiixml->rcode[0] == TURNITIN_RESP_CLASS_CREATED_LOGIN or 
                                               $tiixml->rcode[0] == TURNITIN_RESP_CLASS_CREATED or 
                                               $tiixml->rcode[0] == TURNITIN_RESP_CLASS_UPDATED)) {
@@ -651,6 +657,7 @@ function tii_get_scores() {
 
                $tiiscore = tii_post_to_api($tii, 61, 'GET', $file, false);
                if (isset($tiiscore) && $tiiscore) {
+                   $file = get_record('tii_files','id',$file->id); //get latest record as it may have changed with debug info.
                    $file->tiiscore = $tiiscore;
                    $file->tiicode = 'success';
                    $count++;
