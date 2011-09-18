@@ -236,7 +236,8 @@ function tii_get_md5string($tii){
 function tii_get_xml($url) {
     require_once("filelib.php");
     if (!($fp = download_file_content($url))) {
-        error("error trying to open Turnitin XML file!".$url);
+        notify("error trying to open Turnitin XML file!".$url);
+        return false;
     } else {
             //now do something with the XML file to check to see if this has worked!
         $xml = new SimpleXMLElement($fp);
@@ -538,7 +539,12 @@ function tii_send_files() {
                                     mtrace("Turnitin Success creating Class and assignment");
                                 }
                             } else {
-                                mtrace("Error: could not create assignment in course $course->shortname assignment $module->name TIICODE:".$tiixml->rcode[0]);
+                                if ($tiixml->rcode[0] == '206') {
+                                    mtrace("Error: the assignment might have been deleted in Turnitin in Moodle course $course->shortname assignment $module->name TIICODE:".$tiixml->rcode[0]);
+                                    delete_records('plagiarism_config', 'cm', $cm->id,'name','turnitin_assignid');
+                                } else {
+                                    mtrace("Error: could not create assignment in course $course->shortname assignment $module->name TIICODE:".$tiixml->rcode[0]);
+                                }
                                 $processedmodules[$moduletype][$module->id] = false; //try again next cron
                             }
                         } else {
