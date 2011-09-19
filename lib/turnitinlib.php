@@ -539,12 +539,7 @@ function tii_send_files() {
                                     mtrace("Turnitin Success creating Class and assignment");
                                 }
                             } else {
-                                if ($tiixml->rcode[0] == '206') {
-                                    mtrace("Error: the assignment might have been deleted in Turnitin in Moodle course $course->shortname assignment $module->name TIICODE:".$tiixml->rcode[0]);
-                                    delete_records('plagiarism_config', 'cm', $cm->id,'name','turnitin_assignid');
-                                } else {
-                                    mtrace("Error: could not create assignment in course $course->shortname assignment $module->name TIICODE:".$tiixml->rcode[0]);
-                                }
+                                mtrace("Error: could not create assignment in course $course->shortname assignment $module->name TIICODE:".$tiixml->rcode[0]);
                                 $processedmodules[$moduletype][$module->id] = false; //try again next cron
                             }
                         } else {
@@ -621,10 +616,12 @@ function tii_send_files() {
                     FROM ".$CFG->prefix."tii_files
                     WHERE tiicode IN (".$acin.") AND attempt < ".$tiisettings['turnitin_attempts'];
             $items = get_records_sql($sql);
-            foreach ($items as $item) {
-                $item->tiicode = 'pending';
-                $item->attempt = $item->attempt+1;
-                update_record('tii_files', $item);
+            if (!empty($items)) {
+                foreach ($items as $item) {
+                    $item->tiicode = 'pending';
+                    $item->attempt = $item->attempt+1;
+                    update_record('tii_files', $item);
+                }
             }
         }
    }
