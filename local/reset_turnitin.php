@@ -1,7 +1,7 @@
 <?php
 require_once("../config.php");
 //file used to reset link between Moodle and Turnitin assignment
-$cmid = required_param('id', PARAM_INT);
+$id = required_param('id', PARAM_INT);
 
 require_login();
 
