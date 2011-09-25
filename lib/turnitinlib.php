@@ -442,8 +442,6 @@ function tii_send_files() {
 
                         if ($coursecreated) { //these rcodes signify that this assignment exists, or has been successfully updated.
                             //now create Assignment in Class
-                            $modname = (strlen($module->name) > 80 ? substr($module->name, 0, 80) : $module->name); //check length of var and shorten if needed
-
                             if (!empty($plagiarismvalues['turnitin_assignid'])) {
                                 $tii['assignid']   = $plagiarismvalues['turnitin_assignid'];
                                 $tii['fcmd'] = TURNITIN_UPDATE_RETURN_XML;
@@ -473,7 +471,7 @@ function tii_send_files() {
                                 $tii['dtstart'] = rawurlencode(date('Y-m-d H:i:s', time()+60*60));
                                 $tii['dtdue'] = rawurlencode(date('Y-m-d H:i:s', time()+(365 * 24 * 60 * 60)));
                             }
-                            $tii['assign']   = (strlen($module->name) > 90 ? substr($module->name, 0, 90) : $module->name); //assignment name stored in TII
+                            $tii['assign']   = get_assign_name($module->name, $cm->id); //assignment name stored in TII
                             $tii['fid']      = TURNITIN_CREATE_ASSIGNMENT;
                             $tii['ptl']      = $course->id.$course->shortname; //paper title? - assname?
                             $tii['ptype']    = '2'; //filetype
@@ -539,7 +537,7 @@ function tii_send_files() {
                                     mtrace("Turnitin Success creating Class and assignment");
                                 }
                             } else {
-                                mtrace("Error: could not create assignment in course $course->shortname assignment $module->name TIICODE:".$tiixml->rcode[0]);
+                                mtrace("Error: could not create assignment in course $course->shortname assignment $module->name TIICODE:".$tiixml->rcode[0]. 'CM:'.$cm->id);
                                 $processedmodules[$moduletype][$module->id] = false; //try again next cron
                             }
                         } else {
@@ -582,7 +580,8 @@ function tii_send_files() {
                                $tii2['utp']     = TURNITIN_STUDENT; //2 = instructor, 1= student.
                                $tii2['fid']     = TURNITIN_SUBMIT_PAPER;
                                $tii2['ptl']     = $file->filename; //paper title
-                               $tii2['submit_date'] = rawurlencode(date('Y-m-d H:i:s', filemtime($file->fileinfo->filepath.$file->filename)));
+                              //commented out for Laidlaw.
+                              // $tii2['submit_date'] = rawurlencode(date('Y-m-d H:i:s', filemtime($file->fileinfo->filepath.$file->filename)));
                                $tii2['ptype']   = '2'; //filetype
                                $tii2['pfn']     = $tii['ufn'];
                                $tii2['pln']     = $tii['uln'];
@@ -1099,3 +1098,19 @@ function turnitin_end_session($tiisession) {
     $tii['session-id'] = $tiisession;
     $tiixml = tii_get_xml(tii_get_url($tii));
 }
+
+
+/**
+ * Helper function that makes the name of the module and the coursemoduleid into a concatentated string.
+ * This avoid naming collisions in courses where duplicate names have been used for activities.
+ *
+ * @param string $name the name of the activity e.g. 'End of term essay'
+ * @param int $cmid The id of the moodle coursemodule for this activity
+ * @return string
+ */
+ function get_assign_name($name, $cmid) {
+    $suffix   = '-'.$cmid; // suffix first, so we can keep it 90 chars even if cmid is long
+    $maxnamelength = 90 - strlen($suffix);
+    $shortname = (strlen($name) > $maxnamelength) ? substr($name, 0, $maxnamelength) : $name;
+    return $shortname.$suffix;
+ }
