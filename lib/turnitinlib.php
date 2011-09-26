@@ -537,7 +537,7 @@ function tii_send_files() {
                                     mtrace("Turnitin Success creating Class and assignment");
                                 }
                             } else {
-                                mtrace("Error: could not create assignment in course $course->shortname assignment $module->name TIICODE:".$tiixml->rcode[0]. 'CM:'.$cm->id);
+                                mtrace("Error: could not create assignment in course $course->shortname assignment $module->name TIICODE:".$tiixml->rcode[0]. 'CM:'.$cm->id. ' URL:'.tii_get_url($tii));
                                 $processedmodules[$moduletype][$module->id] = false; //try again next cron
                             }
                         } else {
