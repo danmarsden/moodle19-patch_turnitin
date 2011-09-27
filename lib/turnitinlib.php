@@ -587,8 +587,9 @@ function tii_send_files() {
                                $submitdate = filemtime($file->fileinfo->filepath.$file->filename);
                                if ($submitdate < $dtstart) {
                                    $tii2['submit_date'] = rawurlencode(date('Y-m-d H:i:s', $dtstart+(60*60)));
+                               } else {
+                                   $tii2['submit_date'] = rawurlencode(date('Y-m-d H:i:s', $submitdate));
                                }
-                               $tii2['submit_date'] = rawurlencode(date('Y-m-d H:i:s', $submitdate));
                                $tii2['ptype']   = '2'; //filetype
                                $tii2['pfn']     = $tii['ufn'];
                                $tii2['pln']     = $tii['uln'];
