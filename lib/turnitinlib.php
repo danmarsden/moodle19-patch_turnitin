@@ -584,7 +584,11 @@ function tii_send_files() {
                                $tii2['utp']     = TURNITIN_STUDENT; //2 = instructor, 1= student.
                                $tii2['fid']     = TURNITIN_SUBMIT_PAPER;
                                $tii2['ptl']     = $file->filename; //paper title
-                               $tii2['submit_date'] = rawurlencode(date('Y-m-d H:i:s', filemtime($file->fileinfo->filepath.$file->filename)));
+                               $submitdate = filemtime($file->fileinfo->filepath.$file->filename);
+                               if ($submitdate < $dtstart) {
+                                   $tii2['submit_date'] = rawurlencode(date('Y-m-d H:i:s', $dtstart+(60*60)));
+                               }
+                               $tii2['submit_date'] = rawurlencode(date('Y-m-d H:i:s', $submitdate));
                                $tii2['ptype']   = '2'; //filetype
                                $tii2['pfn']     = $tii['ufn'];
                                $tii2['pln']     = $tii['uln'];
