@@ -463,7 +463,11 @@ function tii_send_files() {
                                 if (empty($module->timedue)) {
                                     $tii['dtdue'] = rawurlencode(date('Y-m-d H:i:s', time()+(365 * 24 * 60 * 60)));
                                 } else {
-                                    $tii['dtdue']    = rawurlencode(date('Y-m-d H:i:s', $module->timedue));
+                                    if ($dtstart > $module->timedue) {
+                                        $tii['dtdue'] = rawurlencode(date('Y-m-d H:i:s', $dtstart+(30 * 24 * 60 * 60)));
+                                    } else {
+                                        $tii['dtdue']    = rawurlencode(date('Y-m-d H:i:s', $module->timedue));
+                                    }
                                 }
                             } else {
                                 $tii['assignid'] = "a_".time().rand(10,5000); //some unique random id only used once.
