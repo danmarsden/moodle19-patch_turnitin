@@ -504,20 +504,13 @@ function tii_send_files() {
                             }
                             if ($tiixml->rcode[0]==TURNITIN_RESP_ASSIGN_CREATED) {
                                 //save assid for use later.
-                                if (!empty($tiixml->assignmentid[0])) {
-                                    if (empty($plagiarismvalues['turnitin_assignid'])) {
-                                        $configval = new stdclass();
-                                        $configval->cm = $cm->id;
-                                        $configval->name = 'turnitin_assignid';
-                                        $configval->value = $tiixml->assignmentid[0];
-                                        insert_record('plagiarism_config', $configval);
-                                    } else {
-                                        $configval = get_record('plagiarism_config', 'cm', $cm->id, 'name', 'turnitin_assignid');
-                                        $configval->value = $tiixml->assignmentid[0];
-                                        update_record('plagiarism_config', $configval);
-                                    }
-                                    $plagiarismvalues['turnitin_assignid'] = $tiixml->assignmentid[0];
-                                }
+                                $configval = new stdclass();
+                                $configval->cm = $cm->id;
+                                $configval->name = 'turnitin_assignid';
+                                $configval->value = $tii['assignid'];
+                                insert_record('plagiarism_config', $configval);
+                                $plagiarismvalues['turnitin_assignid'] = $tii['assignid'];
+
                                 if (!empty($module->timedue) or (!empty($module->timeavailable))) {
                                     //need to update time set in Turnitin.
                                     $tii['assignid'] = $tiixml->assignmentid[0];
