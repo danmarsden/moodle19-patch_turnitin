@@ -154,8 +154,8 @@ function tii_get_url($tii, $returnArray=false, $pid='') {
 
     $tii['gmtime']  = tii_get_gmtime();
     $tii['aid']     = $tiisettings['turnitin_accountid'];
-    $tii['version'] = 'Moodle_19'; //maybe change this to get $CFG->version - only really used by TII for stats reasons. - we don't need this.
-
+    $tii['version'] = rawurlencode($CFG->release); //only used internally by TII.
+    $tii['src'] = '14'; //Magic number that identifies this Integration to Turnitin
     //prepare $tii for md5string - need to urldecode before generating the md5.
     $tiimd5 = array();
     foreach($tii as $key => $value) {
