@@ -65,6 +65,8 @@ define('TURNITIN_RESP_PAPER_SENT', 51); // paper submitted
 define('TURNITIN_RESP_SCORE_RECEIVED', 61); // Originality score retrieved.
 define('TURNITIN_RESP_ASSIGN_EXISTS', 419); // Assignment already exists.
 
+define('TURNITIN_TEACHERCACHE', 'turnitinteachercoursecache'); //name of custom user profile field used by coursecache
+
 function tii_get_url($tii, $returnArray=false, $pid='') {
     global $CFG;
     $tiisettings = get_records_menu('config_plugins', 'plugin', 'tii', '', 'name,value');
@@ -1088,29 +1090,23 @@ function turnitin_end_session($tiisession) {
 //used to check user has been added as teacher to Turnitin and can see stuff on this report.
 function turnitin_update_status($course, $cm) {
     global $DB, $USER;
-    $userprofilefieldname = 'turnitinteachercoursecache';
+    $userprofilefieldname = TURNITIN_TEACHERCACHE;
 
     $plagiarismsettings = get_settings();
     if (empty($plagiarismsettings)) {
         return;
     }
-
+    $plagiarismvalues = get_records_menu('plagiarism_config', 'cm',$cm,'','name,value');
+    if (empty($plagiarismvalues['use_turnitin'])) {
+        //nothing to do here... move along!
+        return '';
+    }
     //first check coursecache user info field to see if this user is already a member of the Turnitin course.
     if (empty($USER->$userprofilefieldname) || !in_array($course->id, explode(',',$USER->$userprofilefieldname))) {
         $existingcourses = explode(',',$USER->$userprofilefieldname);
         $userprofilefieldid = get_field('user_info_field', 'id', 'shortname',$userprofilefieldname);
-        $tii = array();
-        $tii['utp'] = TURNITIN_INSTRUCTOR;
-        $tii = turnitin_get_tii_user($tii, $USER);
-        $tii['cid'] = get_config('plagiarism_turnitin_course', $course->id); //course ID
-        $tii['ctl'] = (strlen($course->shortname) > 45 ? substr($course->shortname, 0, 45) : $course->shortname);
-        $tii['ctl'] = (strlen($tii['ctl']) > 5 ? $tii['ctl'] : $tii['ctl']."_____");
-        $tii['fcmd'] = TURNITIN_RETURN_XML;
-        $tii['fid'] = TURNITIN_CREATE_CLASS;
-        $tiixml = tii_get_xml(tii_get_url($tii));
-        if ($tiixml->rcode[0] != TURNITIN_RESP_CLASS_CREATED) {
-            notify(get_string('errorassigninguser','turnitin').':'.$tiixml->rcode[0]);
-            return;
+        if (!turnitin_add_teacher($USER, $course)) {
+            return '';
         }
         $existingcourses[] = $course->id;
         $newcoursecache = implode(',',$existingcourses);
@@ -1147,4 +1143,98 @@ function turnitin_get_tii_user($tii, $user) {
     $tii['uid'] = $user->username;
 
     return $tii;
+}
+
+/**
+ * function to sync teachers in Moodle courses with teachers in Turnitin courses.
+ * @param $time gmttime - if set will only check assignments with a timedue after the time passed (also includes assignments with no due date set)
+ * @param $doanything - include doanything users (admin etc)
+ */
+function turnitin_cron_sync_teachers($time=false, $doanything=false) {
+    global $CFG;
+    $userprofilefieldname = TURNITIN_TEACHERCACHE;
+    //check if we need to run:
+    $plagiarismsettings = get_settings();
+    if (empty($plagiarismsettings)) {
+        return;
+    }
+    mtrace('running turnitin sync teachers');
+    $wheresql = '';
+    if ($time) {
+        $wheresql = 'AND timedue == 0 or timedue > '.$time;
+    }
+    $userprofilefieldid = get_field('user_info_field', 'id', 'shortname', TURNITIN_TEACHERCACHE);
+    //get all assignments that have turnitin enabled and get list of teachers that have not been added as teachers to the course.
+    $sql = "SELECT a.*, cm.id as cm, cm.course FROM {$CFG->prefix}assignment a, {$CFG->prefix}course_modules cm, {$CFG->prefix}plagiarism_config pc, {$CFG->prefix}modules m".
+            " WHERE m.name='assignment' AND m.id=cm.module AND cm.instance=a.id AND pc.cm = cm.id AND pc.name='use_turnitin' AND pc.value='1'".$wheresql;
+    $rs = get_recordset_sql($sql);
+    $teachercache = array();
+    $coursecache = array();
+    while ($assignment = rs_fetch_next_record($rs)) {
+        //get all teachers who can grade in this assignment
+        $assignmentcontext = get_context_instance(CONTEXT_MODULE, $assignment->cm);
+        $teachers = get_users_by_capability($assignmentcontext, 'mod/assignment:grade', '', '', '', '', '', '', $doanything);
+        foreach ($teachers as $teacher) {
+            if (!isset($teachercache[$teacher->id])) {
+                //get this teachers coursecache field
+                $sql = "SELECT d.id, d.data FROM {$CFG->prefix}user_info_field f, {$CFG->prefix}user_info_data d ".
+                       "WHERE f.id=d.fieldid and f.shortname='".TURNITIN_TEACHERCACHE."' AND d.userid={$teacher->id}";
+                $teacherprofilecache = get_record_sql($sql);
+                if (empty($teacherprofilecache)) {
+                    //add new field
+                    $ud = new stdClass();
+                    $ud->userid = $teacher->id;
+                    $ud->fieldid = $userprofilefieldid;
+                    $ud->data = '';
+                    insert_record('user_info_data', $ud);
+                    $teachercache[$teacher->id] = '';
+                } else {
+                    $teachercache[$teacher->id] = $teacherprofilecache->data;
+                }
+
+            }
+            //check to see if this teacher is in this course - if not add it to the coursecache for adding later.
+            if (!in_array($assignment->course, explode(',',$teachercache[$teacher->id]))) {
+                $coursecache[$assignment->course][$teacher->id] = $teacher;
+            }
+        }
+    }
+    rs_close($rs);
+    //now iterate over $coursecache and add each teacher as required.
+    $numadded = 0;
+    foreach($coursecache as $courseid => $teachers) {
+        $course = get_record('course', 'id', $courseid);
+        foreach ($teachers as $teacher) {
+            turnitin_add_teacher($teacher, $course);
+            if (!empty($teachercache[$teacher->id])) {
+                $teachercache[$teacher->id] .=','; //only add comma if existing data in field.
+            }
+            $numadded++;
+            $teachercache[$teacher->id] .= $courseid; //add this course to the users coursecache field.
+            set_field('user_info_data','data', $teachercache[$teacher->id], 'userid', $teacher->id, 'fieldid', $userprofilefieldid);
+        }
+    }
+    mtrace('finished turnitin sync teachers - added: '.$numadded);
+    return true;
+}
+
+function turnitin_add_teacher($user, $course) {
+    $tii = array();
+    $tii['utp'] = TURNITIN_INSTRUCTOR;
+    $tii = turnitin_get_tii_user($tii, $user);
+    $tii['cid'] = get_config('plagiarism_turnitin_course', $course->id); //course ID
+    if (empty($tii['cid'])) {
+        $tii['cid']      = "c_".time().rand(10,5000); //some unique random id only used once.
+        set_config($course->id, $tii['cid'], 'plagiarism_turnitin_course');
+    }
+    $tii['ctl'] = (strlen($course->shortname) > 45 ? substr($course->shortname, 0, 45) : $course->shortname);
+    $tii['ctl'] = (strlen($tii['ctl']) > 5 ? $tii['ctl'] : $tii['ctl']."_____");
+    $tii['fcmd'] = TURNITIN_RETURN_XML;
+    $tii['fid'] = TURNITIN_CREATE_CLASS;
+    $tiixml = tii_get_xml(tii_get_url($tii));
+    if ($tiixml->rcode[0] != TURNITIN_RESP_CLASS_CREATED) {
+        notify(get_string('errorassigninguser','turnitin').':'.$tiixml->rcode[0]);
+        return false;
+    }
+    return true;
 }
