@@ -137,6 +137,35 @@ function xmldb_local_upgrade($oldversion) {
            }
        }
     }
+    if ($result && $oldversion < 2011102702) {
+        if (!record_exists('user_info_field', 'shortname','turnitinteachercoursecache')) {
+            //first insert category
+            $newcat = new stdClass();
+            $newcat->name = 'plagiarism_turnitin';
+            $newcat->sortorder = 999;
+            $catid = insert_record('user_info_category', $newcat);
+            //now insert field
+            $newfield = new stdClass();
+            $newfield->shortname = 'turnitinteachercoursecache';
+            $newfield->name = get_string('userprofileteachercache','turnitin');
+            $newfield->description = get_string('userprofileteachercache_desc','turnitin');
+            $newfield->datatype = 'text';
+            $newfield->descriptionformat = 1;
+            $newfield->categoryid = $catid;
+            $newfield->sortorder = 1;
+            $newfield->required = 0;
+            $newfield->locked = 1;
+            $newfield->visible = 0;
+            $newfield->forceunique = 0;
+            $newfield->signup = 0;
+            $newfield->param1 = 30;
+            $newfield->param2 = 5000;
+
+            insert_record('user_info_field', $newfield);
+        }
+
+    }
+
     return $result;
 
 }

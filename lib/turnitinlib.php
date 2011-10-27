@@ -1093,3 +1093,67 @@ function turnitin_end_session($tiisession) {
     $shortname = (strlen($name) > $maxnamelength) ? substr($name, 0, $maxnamelength) : $name;
     return $shortname.$suffix;
  }
+
+//used to check user has been added as teacher to Turnitin and can see stuff on this report.
+function turnitin_update_status($course, $cm) {
+    global $DB, $USER;
+    $userprofilefieldname = 'turnitinteachercoursecache';
+
+    $plagiarismsettings = get_settings();
+    if (empty($plagiarismsettings)) {
+        return;
+    }
+
+    //first check coursecache user info field to see if this user is already a member of the Turnitin course.
+    if (empty($USER->$userprofilefieldname) || !in_array($course->id, explode(',',$USER->$userprofilefieldname))) {
+        $existingcourses = explode(',',$USER->$userprofilefieldname);
+        $userprofilefieldid = get_field('user_info_field', 'id', 'shortname',$userprofilefieldname);
+        $tii = array();
+        $tii['utp'] = TURNITIN_INSTRUCTOR;
+        $tii = turnitin_get_tii_user($tii, $USER);
+        $tii['cid'] = get_config('plagiarism_turnitin_course', $course->id); //course ID
+        $tii['ctl'] = (strlen($course->shortname) > 45 ? substr($course->shortname, 0, 45) : $course->shortname);
+        $tii['ctl'] = (strlen($tii['ctl']) > 5 ? $tii['ctl'] : $tii['ctl']."_____");
+        $tii['fcmd'] = TURNITIN_RETURN_XML;
+        $tii['fid'] = TURNITIN_CREATE_CLASS;
+        $tiixml = tii_get_xml(tii_get_url($tii));
+        if ($tiixml->rcode[0] != TURNITIN_RESP_CLASS_CREATED) {
+            notify(get_string('errorassigninguser','turnitin').':'.$tiixml->rcode[0]);
+            return;
+        }
+        $existingcourses[] = $course->id;
+        $newcoursecache = implode(',',$existingcourses);
+        $DB->set_field('user_info_data','data', $newcoursecache,array('userid'=>$USER->id, 'fieldid'=>$userprofilefieldid));
+        $USER->$userprofilefieldname = $newcoursecache;
+    }
+
+    $tii = array();
+    //print link to teacher login
+    $tii['fcmd'] = TURNITIN_LOGIN; //when set to 2 this returns XML
+    $tii['utp'] = TURNITIN_INSTRUCTOR;
+    $tii['fid'] = TURNITIN_CREATE_USER; //set commands - Administrator login/statistics.
+    $tii = turnitin_get_tii_user($tii, $USER);
+    echo '<div style="text-align:right"><a href="'.tii_get_url($tii).'" target="_blank">'.get_string("teacherlogin","plagiarism_turnitin").'</a></div>';
+    
+}
+
+/**
+* Function used to add the user details to a Turnitin call
+* @param $tii array() $tii array passed to a get_url call
+* @param $plagiarismsettings array() - plagiarism settings array
+* @return string - string name of css class
+*/
+function turnitin_get_tii_user($tii, $user) {
+    global $USER, $DB;
+    if (is_int($user)) {
+        //full user record needed
+        $user = ($user == $USER->id ? $USER : $DB->get_record('user', array('id'=>$user)));
+    }
+    $tii['username'] = $user->username;
+    $tii['uem'] = $user->email;
+    $tii['ufn'] = $user->firstname;
+    $tii['uln'] = $user->lastname;
+    $tii['uid'] = $user->username;
+
+    return $tii;
+}

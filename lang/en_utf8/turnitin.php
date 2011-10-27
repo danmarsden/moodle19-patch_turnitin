@@ -118,3 +118,6 @@ $string['configtiilastname'] ='Surname of the person you want all new classes/as
 $string['config_tiisenduseremail'] = 'Send e-mail to every student created in the TII system with a link to allow login to www.turnitin.com with a temporary password';
 $string['defaultupdated'] ='default settings updated';
 
+$string['userprofileteachercache'] = 'Turnitin teacher course cache';
+$string['userprofileteachercache_desc'] = 'This field is used by the Turnitin plugin to keep a record of all the courses that a teacher has been assigned as a teacher in. - you can clear this field but it may affect performance.';
+$string['errorassigninguser'] = 'An error occurred when trying to assign this user to the external Turnitin system - Turnitin links on this page may not work';
