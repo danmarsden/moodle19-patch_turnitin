@@ -382,18 +382,7 @@ function tii_send_files() {
                    continue;
                }
                //now get details on the uploaded file!!
-               $modfile = "$CFG->dirroot/mod/$moduletype/lib.php";
-               $modfunc = $moduletype."_get_tii_file_info";
-               if (file_exists($modfile)) {
-                   include_once($modfile);
-                   if (function_exists($modfunc)) {
-                       $file->fileinfo = $modfunc($file);
-                   }
-               }
-               if (empty($file->fileinfo)) {
-                   debugging("no filepath found for this file! - Module:".$moduletype." Fileid:".$file->id);
-                   continue;
-               }
+               $file->fileinfo->filepath = $CFG->dataroot.'/'.$course->id.'/moddata/assignment/'.$cm->instance.'/'.$file->userid.'/';
                if (!file_exists($file->fileinfo->filepath.$file->filename)) {
                    //this file has been deleted, so it should be deleted from tii_files
                    mtrace("a file from $course->shortname, assignment: $module->name, user:$user->username doesn't exist -deleting tii_files entry(it was probably deleted by the student)");

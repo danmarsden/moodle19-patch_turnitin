@@ -89,49 +89,51 @@ function xmldb_local_upgrade($oldversion) {
     }
 
     //change table field names to match with 2.0 plugin - keep old table name on purpose.
-    if ($result && $oldversion < 2011102700) {
+    if ($result && $oldversion < 2011102701) {
        $table = new XMLDBTable('tii_files');
        //add new cm field
        $field = new XMLDBField('cm');
-       $field->setAttributes(XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null, null, null, 'id');
+       $field->setAttributes(XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null, null, 0, 'id');
        if (!field_exists($table, $field)) {
            $result = $result && add_field($table, $field);
        }
-       $field = new XMLDBField('course');
-       if ($result && field_exists($table, $field)) {
-           //now convert old fields and remove them
-           //need to update all tii_files records to use CM instead of course, module, instance.
-           $rs = get_recordset('tii_files');
-           while ($tf = rs_fetch_next_record($rs)) {
-               //get cm for this file.
-               $cmid = get_field('course_modules', 'id', 'course', $tf->course, 'module', $tf->module, 'instance', $tf->instance);
-               if (empty($cmid)) {
-                   //this cm doesn't exist - sanity check on assignment table.
-                   if (!record_exists('assignment', 'id', $tf->instance)) {
-                       //this file record is for an assignment that doesn't exist - delete it.
-                       delete_records('tii_files', 'id', $tf->id);
-                   } else {
-                       print_object($tf);
-                       error('an error occurred with the update script - a file and assignment were found with no cm.');
-                   }
-               } else {
-                   $tf->cm = $cmid;
-                   update_record('tii_files', $tf);
-               }
-           }
-           rs_close($rs);
-           //now delete old fields
+       if (field_exists($table, $field)) { //make sure cm field exists before doing the following.
            $field = new XMLDBField('course');
-           if (field_exists($table, $field)) {
-               $result = $result && drop_field($table, $field);
-           }
-           $field = new XMLDBField('module');
-           if (field_exists($table, $field)) {
-               $result = $result && drop_field($table, $field);
-           }
-           $field = new XMLDBField('instance');
-           if (field_exists($table, $field)) {
-               $result = $result && drop_field($table, $field);
+           if ($result && field_exists($table, $field)) {
+               //now convert old fields and remove them
+               //need to update all tii_files records to use CM instead of course, module, instance.
+              $rs = get_recordset('tii_files');
+               while ($tf = rs_fetch_next_record($rs)) {
+                   //get cm for this file.
+                   $cmid = get_field('course_modules', 'id', 'course', $tf->course, 'module', $tf->module, 'instance', $tf->instance);
+                   if (empty($cmid)) {
+                       //this cm doesn't exist - sanity check on assignment table.
+                       if (!record_exists('assignment', 'id', $tf->instance)) {
+                           //this file record is for an assignment that doesn't exist - delete it.
+                           delete_records('tii_files', 'id', $tf->id);
+                       } else {
+                           print_object($tf);
+                           error('an error occurred with the update script - a file and assignment were found with no cm.');
+                       }
+                   } else {
+                       $tf->cm = $cmid;
+                       update_record('tii_files', $tf);
+                   }
+               }
+               rs_close($rs);
+               //now delete old fields
+               $field = new XMLDBField('course');
+               if (field_exists($table, $field)) {
+                  $result = $result && drop_field($table, $field);
+               }
+               $field = new XMLDBField('module');
+               if (field_exists($table, $field)) {
+                   $result = $result && drop_field($table, $field);
+               }
+               $field = new XMLDBField('instance');
+               if (field_exists($table, $field)) {
+                  $result = $result && drop_field($table, $field);
+               }
            }
        }
     }
