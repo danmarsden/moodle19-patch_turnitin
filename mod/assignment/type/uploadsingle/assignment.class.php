@@ -140,7 +140,7 @@ class assignment_uploadsingle extends assignment_base {
                         $plagiarismvalues = get_records_menu('plagiarism_config', 'cm',$this->cm->id,'','name,value');
                         if (!empty($plagiarismvalues['use_turnitin'])) {
                             include_once($CFG->libdir.'/turnitinlib.php');
-                            update_tii_files($um->get_new_filename(), $this->course->id, $this->cm->module, $this->assignment->id);
+                            plagiarism_update_record($this->cm->id, $um->get_new_filename());
                         }
                     } else {
                         notify(get_string("uploadfailnoupdate", "assignment"));
@@ -159,7 +159,7 @@ class assignment_uploadsingle extends assignment_base {
                         $plagiarismvalues = get_records_menu('plagiarism_config', 'cm',$this->cm->id,'','name,value');
                         if (!empty($plagiarismvalues['use_turnitin'])) {
                             include_once($CFG->libdir.'/turnitinlib.php');
-                            update_tii_files($um->get_new_filename(), $this->course->id, $this->cm->module, $this->assignment->id);
+                            plagiarism_update_record($this->cm->id, $um->get_new_filename());
                         }
                     } else {
                         notify(get_string("uploadnotregistered", "assignment", $newfile_name) );

@@ -615,7 +615,7 @@ class assignment_upload extends assignment_base {
                 if (!empty($plagiarismvalues['use_turnitin']) &&
                    (empty($this->assignment->tii_draft_submit) or !$this->drafts_tracked())) {
                     include_once($CFG->libdir.'/turnitinlib.php');
-                    update_tii_files($um->get_new_filename(), $this->course->id, $this->cm->module, $this->assignment->id);
+                    plagiarism_update_record($this->cm->id, $um->get_new_filename());
                 }
             } else {
                 $new_filename = $um->get_new_filename();
@@ -693,7 +693,7 @@ class assignment_upload extends assignment_base {
             }
             if ($files) {
                 foreach ($files as $file) {
-                    update_tii_files($file, $COURSE->id, $this->cm->module, $this->assignment->id);
+                    plagiarism_update_record($this->cm->id, $file);
                 }
             }
         }  // end tii enabled check

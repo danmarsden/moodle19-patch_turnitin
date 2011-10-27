@@ -366,16 +366,19 @@ function tii_send_files() {
                    debugging("invalid userid! - userid:".$file->userid." Module:".$moduletype." Fileid:".$file->id);
                    continue;
                }
-               if (!$course = get_record('course', 'id', $file->course)) {
-                   debugging("invalid courseid! - courseid:".$file->course." Module:".$moduletype." Fileid:".$file->id);
+               if (!$cm = get_record('course_modules', 'id', $file->cm)) {
                    continue;
                }
-               if (!$moduletype = get_field('modules','name', 'id', $file->module)) {
-                   debugging("invalid moduleid! - moduleid:".$file->module." Module:".$moduletype." Fileid:".$file->id);
+               if (!$course = get_record('course', 'id', $cm->course)) {
+                   debugging("invalid courseid! - courseid:".$cm->course." Module:".$moduletype." Fileid:".$file->id);
                    continue;
                }
-               if (!$module = get_record($moduletype, 'id', $file->instance)) {
-                   debugging("invalid instanceid! - instance:".$file->instance." Module:".$moduletype." Fileid:".$file->id);
+               if (!$moduletype = get_field('modules','name', 'id', $cm->module)) {
+                   debugging("invalid moduleid! - moduleid:".$cm->module." Module:".$moduletype." Fileid:".$file->id);
+                   continue;
+               }
+               if (!$module = get_record($moduletype, 'id', $cm->instance)) {
+                   debugging("invalid instanceid! - instance:".$cm->instance." Module:".$moduletype." Fileid:".$file->id);
                    continue;
                }
                //now get details on the uploaded file!!
@@ -398,7 +401,6 @@ function tii_send_files() {
                    continue;
                }
                $tiisession = turnitin_start_session();
-               $cm = get_coursemodule_from_instance($moduletype, $file->instance);
                $plagiarismvalues = get_records_menu('plagiarism_config', 'cm',$cm->id,'','name,value');
                if (!empty($module->timedue) && !empty($module->preventlate) && ($module->timedue+(24 * 50 * 60) < time())) {
                    mtrace("a file from course $course->shortname assignment $module->name cannot be submitted as the timedue has passed and preventlate is set");
@@ -638,7 +640,8 @@ function tii_get_scores() {
             foreach($files as $file) {
                //set globals.
                $user = get_record('user', 'id', $file->userid);
-               $course = get_record('course', 'id', $file->course);
+               $coursemodule = get_record('course_modules', 'id',$file->cm);
+               $course = get_record('course', 'id', $coursemodule->course);
                if (empty($user) or empty($course)) {
                    //this course/user doesn't exist anymore so delete it.
                    delete_records('tii_files', 'id', $file->id);
@@ -673,13 +676,12 @@ function tii_get_scores() {
     }
 }
 
-function tii_get_report_link($file, $userid='') {
+function tii_get_report_link($file, $course) {
     $return = '';
     if ($tiisettings = tii_get_settings()) { //get tii settings.
         $tii = array();
-        $courseshortname = get_field('course', 'shortname', 'id', $file->course); //TODO: Dan - I don't like calling these 2 queries each time for performance
-        $cmid = get_field('course_modules', 'id', 'course', $file->course, 'module', $file->module, 'instance', $file->instance);
-        if (!has_capability('mod/assignment:grade', get_context_instance(CONTEXT_MODULE, $cmid))) {
+        
+        if (!has_capability('mod/assignment:grade', get_context_instance(CONTEXT_MODULE, $file->cm))) {
             $user = get_record('user', 'id', $file->userid);
 
             $tii['username'] = $user->username;
@@ -696,12 +698,12 @@ function tii_get_report_link($file, $userid='') {
             $tii['uid']      = $tiisettings['turnitin_userid'];
             $tii['utp']      = TURNITIN_INSTRUCTOR; //2 = this user is an instructor
         }
-        $tii['cid'] = get_config('plagiarism_turnitin_course', $file->course); //course ID
+        $tii['cid'] = get_config('plagiarism_turnitin_course', $course->id); //course ID
         if (empty($tii['cid'])) { //TODO: - do we need to keep this for backwards compatibility?
-           $tii['cid'] = $tiisettings['turnitin_courseprefix'].$file->course.$courseshortname;
+           $tii['cid'] = $tiisettings['turnitin_courseprefix'].$course->id.$course->shortname;
         }
-        $tii['ctl']    = (strlen($courseshortname) > 70 ? substr($courseshortname, 0, 70) : $courseshortname);
-        $tii['ctl']      = (strlen($tii['ctl']) > 5 ? $tii['ctl'] : $tii['ctl']."_____");
+        $tii['ctl']    = (strlen($course->shortname) > 70 ? substr($course->shortname, 0, 70) : $course->shortname);
+        $tii['ctl']    = (strlen($tii['ctl']) > 5 ? $tii['ctl'] : $tii['ctl']."_____");
         $tii['fcmd'] = TURNITIN_LOGIN; //when set to 2 the tii api call returns XML
         $tii['fid'] = TURNITIN_RETURN_REPORT;
         $tii['oid'] = $file->tii;
@@ -745,32 +747,49 @@ function get_tii_error($tiicode) {
         return '<span class="error">&nbsp;'.$tiierrordesc.'&nbsp;</span>';
     }
 }
-function update_tii_files($filename, $courseid, $moduleid, $instanceid) {
+
+/**
+* updates a tii_files record
+*
+* @param int $cmid - course module id
+* @param int $userid - user id
+* @param varied $identifier - identifier for this plagiarism record - hash of file, id of quiz question etc
+* @return int - id of tii_files record
+*/
+function plagiarism_update_record($cmid, $filename) {
     global $USER;
+    if (empty($filename)) {
+        mtrace("error - no identifier passed - could not update plagiarism record!");
+        return false;
+    }
     //now update or insert record into tii_files
-    if ($tii_file = get_record_select('tii_files', "course='".$courseid.
-                    "' AND module='".$moduleid.
-                    "' AND instance='".$instanceid.
+    $plagiarism_file = get_record_select('tii_files', "cm='".$cmid.
                     "' AND userid = '".$USER->id.
-                    "' AND filename = '".$filename."'")) {
+                    "' AND filename = '".$filename."'");
+    if (!empty($plagiarism_file)) {
         //update record.
-        $tii_file->tiicode = 'pending';
-        $tii_file->tiiscore ='0';
-        if (!update_record('tii_files', $tii_file)) {
-            debugging("update tii_files failed!");
+        //only update this record if it isn't pending or in a success state
+        //TODO: this only works with files - need to allow force update for things like quiz essay qs
+        if ($plagiarism_file->tiicode != 'pending' &&
+            $plagiarism_file->tiicode != 'success' &&
+            $plagiarism_file->tiicode != TURNITIN_RESP_PAPER_SENT) {
+            $plagiarism_file->tiicode = 'pending';
+            $plagiarism_file->tiiscore ='0';
+            update_record('tii_files', $plagiarism_file);
+            return $plagiarism_file->id;
         }
     } else {
-        $tii_file = new object();
-        $tii_file->course = $courseid;
-        $tii_file->module = $moduleid;
-        $tii_file->instance = $instanceid;
-        $tii_file->userid = $USER->id;
-        $tii_file->filename = $filename;
-        $tii_file->tiicode = 'pending';
-        if (!insert_record('tii_files', $tii_file)) {
+        $plagiarism_file = new object();
+        $plagiarism_file->cm = $cmid;
+        $plagiarism_file->userid = $USER->id;
+        $plagiarism_file->filename = $filename;
+        $plagiarism_file->tiicode = 'pending';
+        if (!$pid = insert_record('tii_files', $plagiarism_file)) {
             debugging("insert into tii_files failed");
         }
-    }    
+        return $pid;
+    }
+    return false;
 }
 /**
  * Turnitin use a frontend/backend configuration, an inital call to the frontend cannot always
@@ -864,12 +883,9 @@ function plagiarism_get_css_rank ($score) {
                     $mform->disabledIf($element, 'use_turnitin', 'eq', 0);
                 }
             }
-            //TODO: convert use of course/instance to cm so that we can use exclude biblio/quoted.
             if (!empty($cmid)) {
-                //get full cm
-                $cm = get_record('course_modules', 'id', $cmid);
                 //check if files have already been submitted and disable exclude biblio and quoted if turnitin is enabled.
-                if (record_exists('tii_files', 'course', $cm->course, 'module', $cm->module, 'instance', $cm->instance)) {
+                if (record_exists('tii_files', 'cm', $cmid)) {
                     $mform->disabledIf('plagiarism_exclude_biblio','use_turnitin');
                     $mform->disabledIf('plagiarism_exclude_quoted','use_turnitin');
                 }
@@ -957,7 +973,7 @@ function plagiarism_get_css_rank ($score) {
 * generates a url to allow access to a similarity report.
 *
 * @param integer $userid - userid of user who owns the file.
-* @param object $file - single record from turnitin_files table
+* @param object $file - single record from tii_files table
 * @param object $course - usually global $COURSE value
 * @param integer $cmid - course module id
 * @param object $module - full module recor (eg assignment table)
@@ -979,9 +995,7 @@ function plagiarism_get_css_rank ($score) {
         //check if this is a user trying to look at their details, or a teacher with viewsimilarityscore rights.
         if (($USER->id == $userid) || has_capability('moodle/local:viewsimilarityscore', $modulecontext) || $ignoreuserchecks) {
             if ($plagiarismsettings = get_settings()) {
-                $plagiarismfile = get_record_select('tii_files', "course='".$course->id.
-                                                    "' AND module='".get_field('modules', 'id','name','assignment').
-                                                    "' AND instance='".$module->id.
+                $plagiarismfile = get_record_select('tii_files', "cm='".$cmid.
                                                     "' AND userid='".$userid.
                                                     "' AND filename='".$file."'");
                 if (isset($plagiarismfile->tiiscore) && $plagiarismfile->tiicode=='success') { //if TII has returned a succesful score.
@@ -996,7 +1010,7 @@ function plagiarism_get_css_rank ($score) {
                     $rank = plagiarism_get_css_rank($plagiarismfile->tiiscore);
                     if ($USER->id <> $userid && !$ignoreuserchecks) { //this is a teacher with moodle/plagiarism_turnitin:viewsimilarityscore
                         if (has_capability('moodle/local:viewfullreport', $modulecontext)) {
-                            $output .= '<span class="plagiarismreport"><a href="'.tii_get_report_link($plagiarismfile).'" target="_blank">'.get_string('similarity', 'turnitin').':</a><span class="'.$rank.'">'.$plagiarismfile->tiiscore.'%</span></span>';
+                            $output .= '<span class="plagiarismreport"><a href="'.tii_get_report_link($plagiarismfile, $course).'" target="_blank">'.get_string('similarity', 'turnitin').':</a><span class="'.$rank.'">'.$plagiarismfile->tiiscore.'%</span></span>';
                         } else {
                             $output .= '<span class="plagiarismreport">'.get_string('similarity', 'turnitin').':<span class="'.$rank.'">'.$plagiarismfile->tiiscore.'%</span></span>';
                         }
@@ -1005,7 +1019,7 @@ function plagiarism_get_css_rank ($score) {
                              ($plagiarismvalues['plagiarism_show_student_score']==2 && $assignclosed) or //if student score to be show when assignment closed
                              ($plagiarismvalues['plagiarism_show_student_report']==2 && $assignclosed))) { //if student report to be shown when assignment closed
                         if (($plagiarismvalues['plagiarism_show_student_report']==2 && $assignclosed) or $plagiarismvalues['plagiarism_show_student_report']==1) {
-                            $output .= '<span class="plagiarismreport"><a href="'.tii_get_report_link($plagiarismfile).'" target="_blank">'.get_string('similarity', 'turnitin').'</a>';
+                            $output .= '<span class="plagiarismreport"><a href="'.tii_get_report_link($plagiarismfile, $course).'" target="_blank">'.get_string('similarity', 'turnitin').'</a>';
                             if ($plagiarismvalues['plagiarism_show_student_score']==1 or ($plagiarismvalues['plagiarism_show_student_score']==2 && $assignclosed)) {
                                 $output .= ':<span class="'.$rank.'">'.$plagiarismfile->tiiscore.'%</span>';
                             }
@@ -1020,30 +1034,6 @@ function plagiarism_get_css_rank ($score) {
             }
         }
         return $output.'<br/>';
-    }
-    //TODO: implement a way of running this function properly.
-    function rebuild_assignment_files($aid, $courseid, $moduleid) {
-        $submissions = get_records('assignment_submissions','assignment', $aid);
-        if (empty($submissions)) {
-            return '';
-        }
-        foreach ($submissions as $submission) {
-        $filearea = $CFG->dataroot.'/'.$courseid.'/'.$CFG->moddata.'/assignment/'.$aid.'/'.$submission->userid;
-            if ($files = get_directory_list($filearea)) {
-                foreach ($files as $key => $file) {
-                    if (!record_exists('tii_files', 'instance', $aid, 'filename', $file, 'userid',$submission->userid )) {
-                        $tii_file = new object();
-                        $tii_file->course = $courseid;
-                        $tii_file->module = $moduleid;
-                        $tii_file->instance = $aid;
-                        $tii_file->userid = $submission->userid;
-                        $tii_file->filename = $file;
-                        $tii_file->tiicode = 'pending';
-                        insert_record('tii_files', $tii_file);
-                    }
-                }
-            }
-        }
     }
 
 /**
