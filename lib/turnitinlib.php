@@ -1096,7 +1096,7 @@ function turnitin_update_status($course, $cm) {
     if (empty($plagiarismsettings)) {
         return;
     }
-    $plagiarismvalues = get_records_menu('plagiarism_config', 'cm',$cm,'','name,value');
+    $plagiarismvalues = get_records_menu('plagiarism_config', 'cm',$cm->id,'','name,value');
     if (empty($plagiarismvalues['use_turnitin'])) {
         //nothing to do here... move along!
         return '';
@@ -1110,7 +1110,7 @@ function turnitin_update_status($course, $cm) {
         }
         $existingcourses[] = $course->id;
         $newcoursecache = implode(',',$existingcourses);
-        $DB->set_field('user_info_data','data', $newcoursecache,array('userid'=>$USER->id, 'fieldid'=>$userprofilefieldid));
+        set_field('user_info_data','data', $newcoursecache, 'userid', $USER->id, 'fieldid', $userprofilefieldid);
         $USER->$userprofilefieldname = $newcoursecache;
     }
 
@@ -1120,7 +1120,7 @@ function turnitin_update_status($course, $cm) {
     $tii['utp'] = TURNITIN_INSTRUCTOR;
     $tii['fid'] = TURNITIN_CREATE_USER; //set commands - Administrator login/statistics.
     $tii = turnitin_get_tii_user($tii, $USER);
-    echo '<div style="text-align:right"><a href="'.tii_get_url($tii).'" target="_blank">'.get_string("teacherlogin","plagiarism_turnitin").'</a></div>';
+    echo '<div style="text-align:right"><a href="'.tii_get_url($tii).'" target="_blank">'.get_string("teacherlogin","turnitin").'</a></div>';
     
 }
 
