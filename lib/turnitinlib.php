@@ -666,34 +666,25 @@ function tii_get_scores() {
 }
 
 function tii_get_report_link($file, $course) {
+    global $USER;
     $return = '';
     if ($tiisettings = tii_get_settings()) { //get tii settings.
         $tii = array();
         
         if (!has_capability('mod/assignment:grade', get_context_instance(CONTEXT_MODULE, $file->cm))) {
-            $user = get_record('user', 'id', $file->userid);
-
-            $tii['username'] = $user->username;
-            $tii['uem']      = $user->email;
-            $tii['ufn']      = $user->firstname;
-            $tii['uln']      = $user->lastname;
-            $tii['uid']      = $user->username;
-            $tii['utp'] = TURNITIN_STUDENT; //1 = this user is an student
+            $tii['utp'] = TURNITIN_STUDENT;
         } else {
-            $tii['username'] = $tiisettings['turnitin_userid'];
-            $tii['uem']      = $tiisettings['turnitin_email'];
-            $tii['ufn']      = $tiisettings['turnitin_firstname'];
-            $tii['uln']      = $tiisettings['turnitin_lastname'];
-            $tii['uid']      = $tiisettings['turnitin_userid'];
-            $tii['utp']      = TURNITIN_INSTRUCTOR; //2 = this user is an instructor
+            $tii['utp'] = TURNITIN_INSTRUCTOR;
         }
+
+        $tii = turnitin_get_tii_user($tii, $USER);
         $tii['cid'] = get_config('plagiarism_turnitin_course', $course->id); //course ID
         if (empty($tii['cid'])) { //TODO: - do we need to keep this for backwards compatibility?
            $tii['cid'] = $tiisettings['turnitin_courseprefix'].$course->id.$course->shortname;
         }
         $tii['ctl']    = (strlen($course->shortname) > 70 ? substr($course->shortname, 0, 70) : $course->shortname);
         $tii['ctl']    = (strlen($tii['ctl']) > 5 ? $tii['ctl'] : $tii['ctl']."_____");
-        $tii['fcmd'] = TURNITIN_LOGIN; //when set to 2 the tii api call returns XML
+        $tii['fcmd'] = TURNITIN_LOGIN;
         $tii['fid'] = TURNITIN_RETURN_REPORT;
         $tii['oid'] = $file->tii;
 
