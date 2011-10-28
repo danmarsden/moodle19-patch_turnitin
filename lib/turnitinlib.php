@@ -1025,6 +1025,23 @@ function plagiarism_get_css_rank ($score) {
         return $output.'<br/>';
     }
 
+//used to check user has been added as teacher to Turnitin and can see stuff on this report.
+function turnitin_update_status($course, $cm) {
+    global $DB, $USER;
+
+    $plagiarismsettings = get_settings();
+    if (empty($plagiarismsettings)) {
+        return;
+    }
+    $plagiarismvalues = get_records_menu('plagiarism_config', 'cm',$cm->id,'','name,value');
+    if (empty($plagiarismvalues['use_turnitin'])) {
+        //nothing to do here... move along!
+        return '';
+    }
+
+}
+
+
 /**
  * Function that starts Turnitin session - some api calls require this
  *

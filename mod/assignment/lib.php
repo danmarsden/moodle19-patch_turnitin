@@ -1077,6 +1077,10 @@ class assignment_base {
         print_header_simple(format_string($this->assignment->name,true), "", $navigation,
                 '', '', true, update_module_button($cm->id, $course->id, $this->strassignment), navmenu($course, $cm));
 
+        //hook to allow plagiarism plugins to update status/print links.
+        include_once($CFG->libdir.'/turnitinlib.php');
+        turnitin_update_status($this->course, $this->cm);
+
         $course_context = get_context_instance(CONTEXT_COURSE, $course->id);
         if (has_capability('gradereport/grader:view', $course_context) && has_capability('moodle/grade:viewall', $course_context)) {
             echo '<div class="allcoursegrades"><a href="' . $CFG->wwwroot . '/grade/report/grader/index.php?id=' . $course->id . '">'
