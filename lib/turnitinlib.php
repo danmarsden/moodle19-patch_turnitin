@@ -1174,28 +1174,29 @@ function turnitin_cron_sync_teachers($time=false, $doanything=false) {
         //get all teachers who can grade in this assignment
         $assignmentcontext = get_context_instance(CONTEXT_MODULE, $assignment->cm);
         $teachers = get_users_by_capability($assignmentcontext, 'mod/assignment:grade', '', '', '', '', '', '', $doanything);
-        foreach ($teachers as $teacher) {
-            if (!isset($teachercache[$teacher->id])) {
-                //get this teachers coursecache field
-                $sql = "SELECT d.id, d.data FROM {$CFG->prefix}user_info_field f, {$CFG->prefix}user_info_data d ".
-                       "WHERE f.id=d.fieldid and f.shortname='".TURNITIN_TEACHERCACHE."' AND d.userid={$teacher->id}";
-                $teacherprofilecache = get_record_sql($sql);
-                if (empty($teacherprofilecache)) {
-                    //add new field
-                    $ud = new stdClass();
-                    $ud->userid = $teacher->id;
-                    $ud->fieldid = $userprofilefieldid;
-                    $ud->data = '';
-                    insert_record('user_info_data', $ud);
-                    $teachercache[$teacher->id] = '';
-                } else {
-                    $teachercache[$teacher->id] = $teacherprofilecache->data;
+        if (!empty($teachers)) {
+            foreach ($teachers as $teacher) {
+                if (!isset($teachercache[$teacher->id])) {
+                    //get this teachers coursecache field
+                    $sql = "SELECT d.id, d.data FROM {$CFG->prefix}user_info_field f, {$CFG->prefix}user_info_data d ".
+                           "WHERE f.id=d.fieldid and f.shortname='".TURNITIN_TEACHERCACHE."' AND d.userid={$teacher->id}";
+                    $teacherprofilecache = get_record_sql($sql);
+                    if (empty($teacherprofilecache)) {
+                        //add new field
+                        $ud = new stdClass();
+                        $ud->userid = $teacher->id;
+                        $ud->fieldid = $userprofilefieldid;
+                        $ud->data = '';
+                        insert_record('user_info_data', $ud);
+                        $teachercache[$teacher->id] = '';
+                    } else {
+                        $teachercache[$teacher->id] = $teacherprofilecache->data;
+                    }
                 }
-
-            }
-            //check to see if this teacher is in this course - if not add it to the coursecache for adding later.
-            if (!in_array($assignment->course, explode(',',$teachercache[$teacher->id]))) {
-                $coursecache[$assignment->course][$teacher->id] = $teacher;
+                //check to see if this teacher is in this course - if not add it to the coursecache for adding later.
+                if (!in_array($assignment->course, explode(',',$teachercache[$teacher->id]))) {
+                    $coursecache[$assignment->course][$teacher->id] = $teacher;
+                }
             }
         }
     }
