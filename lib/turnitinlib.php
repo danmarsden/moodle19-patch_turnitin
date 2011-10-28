@@ -624,7 +624,6 @@ function tii_get_scores() {
         //first do submission
         //get all files set to "51" - success code for uploading.
         $files = get_records('tii_files','tiicode','51');
-        //print_object($files);
         if (!empty($files)) {
             foreach($files as $file) {
                //set globals.
@@ -1027,7 +1026,7 @@ function plagiarism_get_css_rank ($score) {
 
 //used to check user has been added as teacher to Turnitin and can see stuff on this report.
 function turnitin_update_status($course, $cm) {
-    global $DB, $USER;
+    global $DB, $USER, $CFG;
 
     $plagiarismsettings = get_settings();
     if (empty($plagiarismsettings)) {
@@ -1038,7 +1037,16 @@ function turnitin_update_status($course, $cm) {
         //nothing to do here... move along!
         return '';
     }
-
+    if ($tiisettings = tii_get_settings()) {
+        if (optional_param('turnitinupdate', '', PARAM_INT)) {
+            $count = turnitin_update_scores($tiisettings, $plagiarismvalues, $course, $cm);
+            notify($count . ' ' .get_string('similarityscoresupdated', 'turnitin'));
+        }
+        //print button to update similarity scores.
+        echo '<span class="turnitinupdate" style="text-align:right;">';
+        print_single_button($CFG->wwwroot.'/mod/assignment/submissions.php', array('id'=>$cm->id, 'turnitinupdate'=>1), get_string('updatesimilarityscores', 'turnitin'));
+        echo '</span>';
+    }
 }
 
 
@@ -1110,3 +1118,42 @@ function turnitin_end_session($tiisession) {
     $shortname = (strlen($name) > $maxnamelength) ? substr($name, 0, $maxnamelength) : $name;
     return $shortname.$suffix;
  }
+
+//function to resync scores in Turnitin with scores in Moodle - used on submissions page.
+function turnitin_update_scores($tiisettings, $plagiarismvalues, $course, $cm) {
+    //list submissions
+    $tii['utp']      = TURNITIN_INSTRUCTOR;
+    $tii['username'] = $tiisettings['turnitin_userid'];
+    $tii['uem']      = $tiisettings['turnitin_email'];
+    $tii['ufn']      = $tiisettings['turnitin_firstname'];
+    $tii['uln']      = $tiisettings['turnitin_lastname'];
+    $tii['uid']      = $tiisettings['turnitin_userid'];
+    $tii['assignid']   = $plagiarismvalues['turnitin_assignid'];
+    $tii['assign']   = (strlen($cm->name) > 90 ? substr($cm->name, 0, 90) : $cm->name); //assignment name stored in TII
+    $tii['cid'] = get_config('plagiarism_turnitin_course', $course->id); //course ID
+    $tii['ctl']      = (strlen($course->shortname) > 45 ? substr($course->shortname, 0, 45) : $course->shortname);
+    $tii['ctl']      = (strlen($tii['ctl']) > 5 ? $tii['ctl'] : $tii['ctl']."_____");
+
+    $tii['fcmd']     = TURNITIN_RETURN_XML;
+    $tii['fid']      = TURNITIN_LIST_SUBMISSIONS;
+    $tiixml = tii_get_xml(tii_get_url($tii));
+    if (!empty($tiixml->object)) {
+        $count = 0;
+        foreach ($tiixml->object as $file) {
+            if (isset($file->overlap[0]) && $file->overlap[0] >=0 && !empty($file->objectID)) {
+
+                $filerec = get_record('tii_files','tii',$file->objectID[0]); //get latest record as it may have changed with debug info.
+                if ($filerec->tiiscore != (int)$file->overlap[0]) { //update this one.
+                    $filerec->tiiscore = (int)$file->overlap[0];
+                    $filerec->tiicode = 'success';
+                    $count++;
+                    if (!update_record('tii_files', $filerec)) {
+                        debugging("update tii score failed");
+                    }
+                }
+            }
+        }
+    }
+
+    return $count;
+}

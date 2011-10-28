@@ -117,4 +117,5 @@ $string['configtiifirstname'] ='First name of the person you want all new classe
 $string['configtiilastname'] ='Surname of the person you want all new classes/assignments in Moodle to be assigned to in the turnitin System';
 $string['config_tiisenduseremail'] = 'Send e-mail to every student created in the TII system with a link to allow login to www.turnitin.com with a temporary password';
 $string['defaultupdated'] ='default settings updated';
-
+$string['updatesimilarityscores'] = 'Update similarity scores';
+$string['similarityscoresupdated'] = 'Similarity scores updated';
