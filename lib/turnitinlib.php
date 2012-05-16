@@ -256,6 +256,10 @@ function tii_post_data($tii, $file='', $pid='') {
 
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
 
+    //it seems that curl has no default timeout so set one here.
+    //set to large values to allow large files to upload completely.
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 120);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 240);
     if (!empty($file)) { //send file if that's passed as well!
         $tiicomplete['pdata'] = '@'.$file;
     }
